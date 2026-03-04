@@ -67,19 +67,54 @@ Khedma Market has 9 feature routers:
 
 ### File Router
 **Namespace**: `file`  
-**Features**: File upload and management
+**Features**:
+- Generate pre-signed S3 URLs for secure file uploads
+- Direct client-to-S3 upload flow
+
+**Example procedures**:
+- `generateUrl` (protected)
+
+[View File API docs →](/api/files)
 
 ### Order Router
 **Namespace**: `order`  
-**Features**: Order creation, tracking, and management
+**Features**:
+- Order creation with package selection
+- Payment processing integration
+- Order status tracking
+
+**Example procedures**:
+- `create` (protected)
+
+[View Order API docs →](/api/orders)
 
 ### Profile Router
 **Namespace**: `profile`  
-**Features**: Public profile management and display
+**Features**:
+- Skills management (add, update, remove)
+- Languages management (add, update, remove)
+- User description updates
+- Public profile queries
+
+**Example procedures**:
+- `addSkill`, `updateSkill`, `removeSkill` (protected)
+- `addLanguage`, `updateLanguage`, `removeLanguage` (protected)
+- `getUserSkills`, `getLanguages` (queries)
+
+[View Profile API docs →](/api/profiles)
 
 ### Category Router
 **Namespace**: `category`  
-**Features**: Category and subcategory management
+**Features**:
+- Browse top-level categories
+- Get subcategories by parent ID
+- Hierarchical category structure
+
+**Example procedures**:
+- `getCategories` (public)
+- `getSubCategories` (public)
+
+[View Category API docs →](/api/categories)
 
 ### Gig Router
 **Namespace**: `gig`  
@@ -103,15 +138,44 @@ Khedma Market has 9 feature routers:
 
 ### Project Router
 **Namespace**: `project`  
-**Features**: Project posting and management
+**Features**:
+- Portfolio project creation
+- Draft workflow with gallery uploads
+- Project publishing and management
+
+**Example procedures**:
+- `createDraft` (protected)
+- `createProject` (protected)
+- `delete` (protected)
+
+[View Project API docs →](/api/projects)
 
 ### Conversation Router
 **Namespace**: `conversation`  
-**Features**: Messaging and conversation management
+**Features**:
+- Real-time messaging between users
+- Conversation creation and retrieval
+- Message sending with attachments
+
+**Example procedures**:
+- `getConverstion` (protected)
+- `sendMessage` (protected)
+
+[View Conversation API docs →](/api/conversations)
 
 ### Job Router
 **Namespace**: `job`  
-**Features**: Job posting and application management
+**Features**:
+- Job posting creation and updates
+- Application submission
+- Job type management (full-time, part-time, contract, intern)
+
+**Example procedures**:
+- `create` (protected)
+- `update` (protected)
+- `apply` (protected)
+
+[View Job API docs →](/api/jobs)
 
 ## Making API Calls
 

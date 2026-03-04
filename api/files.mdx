@@ -1,0 +1,226 @@
+---
+title: Files API
+description: Generate pre-signed URLs for uploading files to AWS S3
+---
+
+## Overview
+
+The Files API provides secure file upload functionality using AWS S3 pre-signed URLs. This allows clients to upload files directly to S3 without exposing AWS credentials.
+
+<Note>
+This endpoint requires authentication. Only logged-in users can generate upload URLs.
+</Note>
+
+## Environment Configuration
+
+The file router requires the following environment variables (from `.env.example`):
+
+```bash
+AWS_ACCESS_KEY_ID="your-aws-access-key"
+AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+AWS_REGION="your-aws-region"
+AWS_BUCKET_NAME="your-bucket-name"
+```
+
+## Mutations
+
+### Generate Upload URL
+
+Generate a pre-signed S3 URL for direct file upload from the client.
+
+**Input Parameters**
+
+<ParamField path="filename" type="string" required>
+  Name of the file to upload (e.g., "profile-picture.jpg")
+</ParamField>
+
+<ParamField path="filetype" type="string" required>
+  MIME type of the file (e.g., "image/jpeg", "application/pdf")
+</ParamField>
+
+```typescript
+const { url, key } = await trpc.file.generateUrl.mutate({
+  filename: "portfolio-image.jpg",
+  filetype: "image/jpeg"
+});
+```
+
+**Response**
+
+<ResponseField name="url" type="string">
+  Pre-signed S3 URL valid for 120 seconds
+</ResponseField>
+
+<ResponseField name="key" type="string">
+  S3 object key (format: `{uuid}/{filename}`)
+</ResponseField>
+
+<Accordion title="Example response">
+```json
+{
+  "url": "https://your-bucket.s3.amazonaws.com/a1b2c3d4-e5f6-7890-abcd-ef1234567890/portfolio-image.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=...",
+  "key": "a1b2c3d4-e5f6-7890-abcd-ef1234567890/portfolio-image.jpg"
+}
+```
+</Accordion>
+
+## Implementation Details
+
+From `~/workspace/source/src/server/api/routers/file.ts`:
+
+```typescript
+import S3 from "aws-sdk/clients/s3";
+import { randomUUID } from "crypto";
+
+const s3 = new S3({
+  accessKeyId: env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+  region: env.AWS_REGION,
+  signatureVersion: "v4",
+});
+
+export const fileRouter = createTRPCRouter({
+  generateUrl: protectedProcedure
+    .input(z.object({ filename: z.string(), filetype: z.string() }))
+    .mutation(async ({ input }) => {
+      const { filename, filetype } = input;
+      const fileId = randomUUID();
+      const key = `${fileId}/${filename}`;
+
+      const params = {
+        Bucket: env.AWS_BUCKET_NAME,
+        Key: key,
+        Expires: 120, // URL valid for 2 minutes
+        ContentType: filetype,
+      };
+
+      const url = s3.getSignedUrl("putObject", params);
+      return { url, key };
+    }),
+});
+```
+
+## Upload Flow
+
+<Steps>
+  <Step title="Request upload URL">
+    Call `file.generateUrl` with filename and file type
+    
+    ```typescript
+    const { url, key } = await trpc.file.generateUrl.mutate({
+      filename: file.name,
+      filetype: file.type
+    });
+    ```
+  </Step>
+  
+  <Step title="Upload file to S3">
+    Use the pre-signed URL to upload directly to S3
+    
+    ```typescript
+    await fetch(url, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+    ```
+  </Step>
+  
+  <Step title="Construct public URL">
+    Build the public URL using the returned key
+    
+    ```typescript
+    const publicUrl = `https://${env.AWS_BUCKET_NAME}.s3.${env.AWS_REGION}.amazonaws.com/${key}`;
+    ```
+  </Step>
+  
+  <Step title="Save URL to database">
+    Store the public URL in your database (e.g., as attachment, profile picture, or gig image)
+    
+    ```typescript
+    await trpc.user.updateUserPersonalInfo.mutate({
+      profilePic: publicUrl
+    });
+    ```
+  </Step>
+</Steps>
+
+## Complete Upload Example
+
+```typescript
+import { api } from "@/trpc/react";
+
+async function uploadFile(file: File) {
+  try {
+    // Step 1: Get pre-signed URL
+    const { url, key } = await api.file.generateUrl.mutate({
+      filename: file.name,
+      filetype: file.type,
+    });
+
+    // Step 2: Upload to S3
+    const uploadResponse = await fetch(url, {
+      method: "PUT",
+      body: file,
+      headers: {
+        "Content-Type": file.type,
+      },
+    });
+
+    if (!uploadResponse.ok) {
+      throw new Error("Upload failed");
+    }
+
+    // Step 3: Construct public URL
+    const publicUrl = `https://${process.env.NEXT_PUBLIC_AWS_BUCKET_NAME}.s3.${process.env.NEXT_PUBLIC_AWS_REGION}.amazonaws.com/${key}`;
+
+    // Step 4: Return public URL for database storage
+    return publicUrl;
+  } catch (error) {
+    console.error("File upload error:", error);
+    throw error;
+  }
+}
+```
+
+## Usage Contexts
+
+This API is used throughout Khedma Market for:
+
+- **Profile Pictures** - User avatar uploads
+- **Gig Galleries** - Service showcase images
+- **Portfolio Projects** - Images, videos, and documents
+- **Message Attachments** - File sharing in conversations
+- **Company Logos** - Brand image uploads
+
+## Security Features
+
+- **Authentication Required** - Only authenticated users can generate URLs
+- **Time-Limited URLs** - Pre-signed URLs expire after 120 seconds
+- **Unique Keys** - Each upload gets a UUID-based unique path
+- **Content-Type Validation** - File type is specified and enforced
+
+## Error Handling
+
+```typescript
+try {
+  const { url, key } = await trpc.file.generateUrl.mutate({
+    filename: file.name,
+    filetype: file.type,
+  });
+} catch (error) {
+  if (error.code === "UNAUTHORIZED") {
+    // User is not logged in
+  } else {
+    // Other error (network, S3 configuration, etc.)
+  }
+}
+```
+
+## Related Pages
+
+- [Authentication](/api/authentication) - Required for file uploads
+- [Gig Endpoints](/api/gigs) - Upload gig images
+- [User Endpoints](/api/users) - Upload profile pictures

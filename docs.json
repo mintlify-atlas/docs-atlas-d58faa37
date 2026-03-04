@@ -69,7 +69,10 @@
               "api/orders",
               "api/jobs",
               "api/conversations",
-              "api/profiles"
+              "api/profiles",
+              "api/categories",
+              "api/files",
+              "api/projects"
             ]
           }
         ]

@@ -1,0 +1,357 @@
+---
+title: Projects API
+description: Manage freelancer portfolio projects
+---
+
+## Overview
+
+The Projects API allows freelancers to create, update, and manage portfolio projects that showcase their previous work. Projects include title, description, and a gallery of images, videos, and documents.
+
+<Note>
+All project endpoints require authentication. Users can only manage their own projects.
+</Note>
+
+## Project Model
+
+<ResponseField name="id" type="string">
+  Unique project identifier (cuid)
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  Project title (5-250 characters)
+</ResponseField>
+
+<ResponseField name="description" type="string" required>
+  Project description (5-2000 characters)
+</ResponseField>
+
+<ResponseField name="status" type="ProjectStatus">
+  Publication status: `draft` or `published`
+</ResponseField>
+
+<ResponseField name="gallery" type="object">
+  Project media files
+  
+  <Expandable title="gallery properties">
+    <ResponseField name="images" type="string[]">
+      Array of image URLs (at least 1 required)
+    </ResponseField>
+    
+    <ResponseField name="videos" type="string[]">
+      Array of video URLs
+    </ResponseField>
+    
+    <ResponseField name="documents" type="string[]">
+      Array of document URLs
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the user who created the project
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+## Mutations
+
+### Create Draft
+
+Create a new empty project draft. This is the first step in the project creation workflow.
+
+```typescript
+const project = await trpc.project.createDraft.mutate();
+```
+
+**Response**
+
+Returns a new Project object with empty title and description:
+
+```json
+{
+  "id": "clx1234567890",
+  "title": "",
+  "description": "",
+  "status": "draft",
+  "userId": "user123",
+  "createdAt": "2024-03-04T10:00:00Z",
+  "updatedAt": "2024-03-04T10:00:00Z"
+}
+```
+
+### Create/Update Project
+
+Update an existing project draft with complete details and publish it.
+
+**Input Parameters**
+
+<ParamField path="id" type="string" required>
+  Project ID to update
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Project title (5-250 characters)
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  Project description (5-2000 characters)
+</ParamField>
+
+<ParamField path="status" type="ProjectStatus" required>
+  Either `"draft"` or `"published"`
+</ParamField>
+
+<ParamField path="gallery" type="object" required>
+  Project media files
+  
+  <Expandable title="gallery fields">
+    <ParamField path="gallery.images" type="string[]" required>
+      Image URLs (minimum 1 required)
+    </ParamField>
+    
+    <ParamField path="gallery.videos" type="string[]">
+      Video URLs (optional)
+    </ParamField>
+    
+    <ParamField path="gallery.documents" type="string[]">
+      Document URLs (optional)
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+```typescript
+const project = await trpc.project.createProject.mutate({
+  id: "clx1234567890",
+  title: "E-commerce Website for Fashion Brand",
+  description: "Built a full-featured online store with payment integration...",
+  status: "published",
+  gallery: {
+    images: [
+      "https://bucket.s3.amazonaws.com/uuid1/homepage.jpg",
+      "https://bucket.s3.amazonaws.com/uuid2/product-page.jpg"
+    ],
+    videos: [
+      "https://bucket.s3.amazonaws.com/uuid3/demo-video.mp4"
+    ],
+    documents: []
+  }
+});
+```
+
+**Process**
+
+1. Validates project ownership (must be owned by current user)
+2. Deletes all existing attachments for the project
+3. Updates project title, description, and status
+4. Creates new attachment records for all gallery items
+5. Returns updated project
+
+**Error Handling**
+
+<Warning>
+Throws `NOT_FOUND` error if project doesn't exist or doesn't belong to current user.
+</Warning>
+
+### Delete Project
+
+Delete a project and all its associated attachments.
+
+**Input Parameters**
+
+<ParamField path="id" type="string" required>
+  Project ID to delete
+</ParamField>
+
+```typescript
+await trpc.project.delete.mutate({
+  id: "clx1234567890"
+});
+```
+
+**Process**
+
+1. Validates project ownership
+2. Deletes all attachments
+3. Deletes the project
+4. Returns the deleted project object
+
+<Warning>
+This action is permanent and cannot be undone. Throws `NOT_FOUND` if project doesn't exist or doesn't belong to current user.
+</Warning>
+
+## Server Functions
+
+In addition to tRPC procedures, the project router exports server-side functions for server components and server actions.
+
+### getProjectDetails
+
+Retrieve a single project with formatted gallery.
+
+```typescript
+import { getProjectDetails } from "@/server/api/routers/project";
+
+const project = await getProjectDetails(projectId, userId);
+```
+
+### getUserProjects
+
+Retrieve all projects for a user with formatted galleries.
+
+```typescript
+import { getUserProjects } from "@/server/api/routers/project";
+
+const projects = await getUserProjects(userId);
+```
+
+**Return Type**
+
+```typescript
+type TGetUserProjects = {
+  id: string;
+  title: string;
+  description: string;
+  status: "draft" | "published";
+  userId: string;
+  createdAt: Date;
+  gallery: {
+    images: string[];
+    videos: string[];
+    documents: string[];
+  };
+}[];
+```
+
+## Complete Workflow Example
+
+```typescript
+import { api } from "@/trpc/react";
+
+function CreateProjectForm() {
+  const createDraft = api.project.createDraft.useMutation();
+  const updateProject = api.project.createProject.useMutation();
+  const deleteProject = api.project.delete.useMutation();
+
+  async function handleCreateProject(formData: any) {
+    try {
+      // Step 1: Create empty draft
+      const draft = await createDraft.mutateAsync();
+
+      // Step 2: Upload images using file router
+      const imageUrls = await Promise.all(
+        formData.images.map(async (file: File) => {
+          const { url, key } = await api.file.generateUrl.mutate({
+            filename: file.name,
+            filetype: file.type,
+          });
+          
+          await fetch(url, {
+            method: "PUT",
+            body: file,
+            headers: { "Content-Type": file.type },
+          });
+          
+          return `https://bucket.s3.amazonaws.com/${key}`;
+        })
+      );
+
+      // Step 3: Update and publish project
+      const project = await updateProject.mutateAsync({
+        id: draft.id,
+        title: formData.title,
+        description: formData.description,
+        status: "published",
+        gallery: {
+          images: imageUrls,
+          videos: [],
+          documents: [],
+        },
+      });
+
+      console.log("Project created:", project);
+    } catch (error) {
+      console.error("Error creating project:", error);
+    }
+  }
+
+  return (
+    <form onSubmit={handleCreateProject}>
+      {/* Form fields */}
+    </form>
+  );
+}
+```
+
+## Validation Schema
+
+From `~/workspace/source/src/schemas`:
+
+```typescript
+const GallerySchema = z.object({
+  images: z.array(z.string()).refine((images) => images.length > 0, {
+    message: "At least one image is required",
+  }),
+  videos: z.array(z.string()),
+  documents: z.array(z.string()),
+});
+
+const projectSchema = z.object({
+  title: z.string().min(5, "Title is too short").max(250, "Title is too long"),
+  description: z
+    .string()
+    .min(5, "Description is too short")
+    .max(2000, "Description is too long"),
+  gallery: GallerySchema,
+});
+```
+
+## Database Schema
+
+From `~/workspace/source/prisma/schema.prisma`:
+
+```prisma
+model Project {
+  id          String        @id @default(cuid())
+  title       String        @db.VarChar(255)
+  description String        @db.Text
+  status      ProjectStatus @default(draft)
+  gallery     Attachement[]
+  createdAt   DateTime      @default(now()) @map("created_at")
+  updatedAt   DateTime      @updatedAt @map("updated_at")
+  user        User?         @relation(fields: [userId], references: [id])
+  userId      String?       @map("user_id")
+
+  @@map("projects")
+}
+
+enum ProjectStatus {
+  draft
+  published
+}
+
+model Attachement {
+  id        String   @id @default(cuid())
+  name      String
+  url       String
+  type      String
+  userId    String?  @map("user_id")
+  user      User?    @relation(fields: [userId], references: [id])
+  projectId String?  @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id])
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("attachements")
+}
+```
+
+## Related Pages
+
+- [Freelancer Profiles](/features/freelancer-profiles) - Projects are part of freelancer portfolios
+- [Files API](/api/files) - Upload project images and documents
+- [For Freelancers](/guides/freelancers) - User guide for building portfolios

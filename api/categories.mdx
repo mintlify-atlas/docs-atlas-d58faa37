@@ -1,0 +1,190 @@
+---
+title: Categories API
+description: Browse and manage gig categories and subcategories
+---
+
+## Overview
+
+The Categories API provides public endpoints for browsing the hierarchical category structure used to organize gigs on Khedma Market. Categories have a parent-child relationship, allowing for main categories and subcategories.
+
+## Category Model
+
+<ResponseField name="id" type="string">
+  Unique category identifier (cuid)
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Category display name
+</ResponseField>
+
+<ResponseField name="slug" type="string" required>
+  URL-friendly unique identifier
+</ResponseField>
+
+<ResponseField name="parentId" type="string | null">
+  Parent category ID (null for top-level categories)
+</ResponseField>
+
+<ResponseField name="subCategories" type="Category[]">
+  Array of child categories
+</ResponseField>
+
+<ResponseField name="gigs" type="Gig[]">
+  Gigs associated with this category
+</ResponseField>
+
+## Queries
+
+### Get Categories
+
+Retrieve all top-level categories (categories without a parent).
+
+```typescript
+const categories = await trpc.category.getCategories.query();
+```
+
+**Response**
+
+Returns an array of Category objects where `parentId` is `null`.
+
+<Accordion title="Example response">
+```json
+[
+  {
+    "id": "clx1234567890",
+    "name": "Design & Creative",
+    "slug": "design-creative",
+    "parentId": null
+  },
+  {
+    "id": "clx2345678901",
+    "name": "Programming & Tech",
+    "slug": "programming-tech",
+    "parentId": null
+  },
+  {
+    "id": "clx3456789012",
+    "name": "Writing & Translation",
+    "slug": "writing-translation",
+    "parentId": null
+  }
+]
+```
+</Accordion>
+
+### Get Subcategories
+
+Retrieve all subcategories for a given parent category.
+
+**Input Parameters**
+
+<ParamField path="parentId" type="string" required>
+  The ID of the parent category
+</ParamField>
+
+```typescript
+const subcategories = await trpc.category.getSubCategories.query({
+  parentId: "clx1234567890"
+});
+```
+
+**Response**
+
+Returns an array of Category objects where `parentId` matches the input, including nested `subCategories` if any exist.
+
+<Accordion title="Example response">
+```json
+[
+  {
+    "id": "clx4567890123",
+    "name": "Logo Design",
+    "slug": "logo-design",
+    "parentId": "clx1234567890",
+    "subCategories": []
+  },
+  {
+    "id": "clx5678901234",
+    "name": "Web Design",
+    "slug": "web-design",
+    "parentId": "clx1234567890",
+    "subCategories": []
+  },
+  {
+    "id": "clx6789012345",
+    "name": "Graphic Design",
+    "slug": "graphic-design",
+    "parentId": "clx1234567890",
+    "subCategories": []
+  }
+]
+```
+</Accordion>
+
+## Usage Example
+
+Building a category navigation menu:
+
+```typescript
+import { api } from "@/trpc/react";
+
+function CategoryMenu() {
+  const { data: categories } = api.category.getCategories.useQuery();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  const { data: subcategories } = api.category.getSubCategories.useQuery(
+    { parentId: selectedCategory! },
+    { enabled: !!selectedCategory }
+  );
+
+  return (
+    <div>
+      <h2>Categories</h2>
+      <ul>
+        {categories?.map(cat => (
+          <li key={cat.id} onClick={() => setSelectedCategory(cat.id)}>
+            {cat.name}
+          </li>
+        ))}
+      </ul>
+      
+      {subcategories && (
+        <>
+          <h3>Subcategories</h3>
+          <ul>
+            {subcategories.map(sub => (
+              <li key={sub.id}>{sub.name}</li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+## Database Schema
+
+From `~/workspace/source/prisma/schema.prisma`:
+
+```prisma
+model Category {
+  id             String     @id @default(cuid())
+  name           String
+  slug           String     @unique
+  parentCategory Category?  @relation(name: "CategoryRelation", fields: [parentId], references: [id])
+  subCategories  Category[] @relation(name: "CategoryRelation")
+  parentId       String?    @map("parent_id")
+  gigs           Gig[]
+
+  @@map("categories")
+}
+```
+
+## Access Control
+
+Both endpoints are **public** and do not require authentication. They can be called by any user or guest.
+
+## Related Pages
+
+- [Gig Endpoints](/api/gigs) - Create gigs within categories
+- [Gig Marketplace](/features/gig-marketplace) - User-facing gig browsing
