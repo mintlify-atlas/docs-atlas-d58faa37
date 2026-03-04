@@ -1,0 +1,403 @@
+---
+title: 'Jobs API'
+description: 'Job postings and application management for companies'
+---
+
+## Overview
+
+The Jobs API enables companies to post job openings and manage applications. Freelancers and job seekers can apply to posted positions with cover letters.
+
+## Mutations
+
+### create
+
+Create a new job posting. Requires the user to have a company profile.
+
+**Input Parameters:**
+
+<ParamField path="title" type="string" required>
+  Job title (5-250 characters)
+</ParamField>
+
+<ParamField path="description" type="object" required>
+  EditorJS OutputData object with job description
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Job location (5-250 characters)
+</ParamField>
+
+<ParamField path="jobType" type="enum" required>
+  Employment type:
+  - `full_time`: Full-time position
+  - `part_time`: Part-time position
+  - `contract`: Contract work
+  - `intern`: Internship
+</ParamField>
+
+<ParamField path="canBeRemote" type="boolean">
+  Whether the position can be performed remotely
+  
+  Default: `false`
+</ParamField>
+
+<ParamField path="salary" type="string">
+  Salary range or information (optional)
+</ParamField>
+
+**Response:**
+
+Returns the created Job object with generated slug.
+
+**Errors:**
+
+- `BAD_REQUEST`: User needs to setup a company profile first
+- `BAD_REQUEST`: Error occurred while creating the job
+
+**Example:**
+
+```typescript
+const job = await trpc.job.create.mutate({
+  title: "Senior Full-Stack Developer",
+  description: {
+    blocks: [
+      {
+        type: "paragraph",
+        data: {
+          text: "We are looking for an experienced full-stack developer..."
+        }
+      },
+      {
+        type: "list",
+        data: {
+          style: "unordered",
+          items: [
+            "5+ years of experience",
+            "React and Node.js expertise",
+            "Strong communication skills"
+          ]
+        }
+      }
+    ]
+  },
+  location: "Casablanca, Morocco",
+  jobType: "full_time",
+  canBeRemote: true,
+  salary: "15,000 - 25,000 MAD/month"
+});
+
+console.log(`Job created with slug: ${job.slug}`);
+```
+
+---
+
+### update
+
+Update an existing job posting.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Job ID to update
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Job title (5-250 characters)
+</ParamField>
+
+<ParamField path="description" type="object" required>
+  EditorJS OutputData object with job description
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Job location (5-250 characters)
+</ParamField>
+
+<ParamField path="jobType" type="enum" required>
+  Employment type: `full_time`, `part_time`, `contract`, or `intern`
+</ParamField>
+
+<ParamField path="canBeRemote" type="boolean">
+  Whether remote work is allowed
+</ParamField>
+
+<ParamField path="salary" type="string">
+  Salary information
+</ParamField>
+
+**Response:**
+
+Returns the updated Job object.
+
+**Errors:**
+
+- `BAD_REQUEST`: User needs a company profile or update failed
+
+**Example:**
+
+```typescript
+const updated = await trpc.job.update.mutate({
+  id: "job_clxxx...",
+  title: "Senior Full-Stack Developer (Updated)",
+  description: updatedDescription,
+  location: "Rabat, Morocco",
+  jobType: "full_time",
+  canBeRemote: true,
+  salary: "20,000 - 30,000 MAD/month"
+});
+```
+
+---
+
+### apply
+
+Submit a job application with a cover letter.
+
+**Input Parameters:**
+
+<ParamField path="slug" type="string" required>
+  Job posting slug (URL identifier)
+</ParamField>
+
+<ParamField path="coverLetter" type="string" required>
+  Cover letter text
+</ParamField>
+
+**Response:**
+
+Returns the created Application object.
+
+**Errors:**
+
+- `BAD_REQUEST`: Job not found
+- `BAD_REQUEST`: Error occurred while applying
+
+**Example:**
+
+```typescript
+const application = await trpc.job.apply.mutate({
+  slug: "senior-full-stack-developer-ab12",
+  coverLetter: `Dear Hiring Manager,
+
+I am excited to apply for the Senior Full-Stack Developer position...
+
+With over 7 years of experience in React and Node.js, I have successfully...
+
+Best regards,
+John Doe`
+});
+
+console.log("Application submitted:", application.id);
+```
+
+---
+
+## Job Model
+
+### Job Fields
+
+<ResponseField name="id" type="string">
+  Unique job identifier (CUID)
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  URL-friendly unique identifier (auto-generated)
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Job title
+</ResponseField>
+
+<ResponseField name="description" type="Json">
+  Rich text job description (EditorJS format)
+</ResponseField>
+
+<ResponseField name="location" type="string">
+  Job location
+</ResponseField>
+
+<ResponseField name="salary" type="string">
+  Salary information (optional)
+</ResponseField>
+
+<ResponseField name="canBeRemote" type="boolean">
+  Whether remote work is allowed
+</ResponseField>
+
+<ResponseField name="type" type="JobType">
+  Employment type enum: full_time, part_time, contract, intern
+</ResponseField>
+
+<ResponseField name="companyId" type="string">
+  ID of the company posting the job
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+### Relations
+
+<ResponseField name="company" type="Company">
+  The company that posted this job
+</ResponseField>
+
+<ResponseField name="applications" type="Application[]">
+  All applications submitted for this job
+</ResponseField>
+
+---
+
+## Application Model
+
+### Application Fields
+
+<ResponseField name="id" type="string">
+  Unique application identifier (CUID)
+</ResponseField>
+
+<ResponseField name="jobId" type="string">
+  ID of the job being applied to
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the applicant
+</ResponseField>
+
+<ResponseField name="coverLetter" type="string">
+  Cover letter text
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Application submission timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+### Relations
+
+<ResponseField name="applicant" type="User">
+  The user who applied
+</ResponseField>
+
+<ResponseField name="job" type="Job">
+  The job being applied to
+</ResponseField>
+
+---
+
+## Server-Side Functions
+
+### getJobById(id: string)
+
+Fetch job details by ID.
+
+**Returns:** Job object or null if not found
+
+**Example:**
+
+```typescript
+import { getJobById } from "@/server/api/routers/job";
+
+const job = await getJobById("job_clxxx...");
+```
+
+---
+
+### getUserJobs()
+
+Fetch all jobs posted by the authenticated user's company, including applications.
+
+**Returns:** Array of jobs with detailed application data
+
+**Redirects:** To `/auth/sign-in` if not authenticated
+
+**Response includes:**
+- Job details (id, title, slug, type, description, location, salary, canBeRemote)
+- Application details for each job:
+  - Application ID and cover letter
+  - Applicant profile (name, bio, resume, contact info)
+
+**Example:**
+
+```typescript
+import { getUserJobs } from "@/server/api/routers/job";
+
+const jobs = await getUserJobs();
+
+for (const job of jobs) {
+  console.log(`${job.title}: ${job.applications.length} applications`);
+  
+  for (const app of job.applications) {
+    console.log(`  - ${app.applicant.firstName} ${app.applicant.lastName}`);
+  }
+}
+```
+
+---
+
+### getJobApplications(id: string)
+
+Fetch all applications for a specific job.
+
+**Parameters:**
+- `id`: Job ID
+
+**Returns:** Array of application objects with applicant details
+
+**Example:**
+
+```typescript
+import { getJobApplications } from "@/server/api/routers/job";
+
+const applications = await getJobApplications("job_clxxx...");
+
+console.log(`Received ${applications.length} applications`);
+```
+
+---
+
+## Complete Example: Job Posting Flow
+
+```typescript
+// 1. Company creates a job posting
+const newJob = await trpc.job.create.mutate({
+  title: "React Developer",
+  description: editorContent,
+  location: "Casablanca, Morocco",
+  jobType: "full_time",
+  canBeRemote: true,
+  salary: "12,000 - 18,000 MAD/month"
+});
+
+// 2. Job seeker views and applies
+const application = await trpc.job.apply.mutate({
+  slug: newJob.slug,
+  coverLetter: "I am excited to apply..."
+});
+
+// 3. Company reviews applications
+const allApplications = await getJobApplications(newJob.id);
+
+for (const app of allApplications) {
+  console.log(`
+    Applicant: ${app.applicant.firstName} ${app.applicant.lastName}
+    Email: ${app.applicant.email}
+    Resume: ${app.applicant.resume}
+    Cover Letter: ${app.coverLetter}
+  `);
+}
+
+// 4. Update job posting if needed
+await trpc.job.update.mutate({
+  id: newJob.id,
+  title: "Senior React Developer",
+  // ... other fields
+});
+```

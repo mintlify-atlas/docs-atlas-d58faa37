@@ -1,0 +1,310 @@
+---
+title: 'Reviews & Ratings'
+description: 'Build reputation through client feedback and ratings'
+icon: 'star'
+---
+
+## Overview
+
+The Reviews & Ratings system is essential for building trust and reputation on Khedma Market. After completing an order, clients can leave reviews and ratings that appear on both the freelancer's profile and the specific gig. These reviews help future clients make informed decisions and incentivize high-quality work.
+
+## Key Capabilities
+
+### Review Components
+
+<CardGroup cols={2}>
+  <Card title="Star Ratings" icon="star">
+    Numerical rating from 1-5 stars indicating satisfaction level
+  </Card>
+  
+  <Card title="Written Comments" icon="comment">
+    Detailed feedback about the experience and deliverables
+  </Card>
+  
+  <Card title="Gig-Specific" icon="tag">
+    Reviews are tied to specific gigs and appear on gig pages
+  </Card>
+  
+  <Card title="Profile Aggregation" icon="user">
+    Overall freelancer rating calculated from all reviews
+  </Card>
+</CardGroup>
+
+### Rating Impact
+
+Reviews influence multiple aspects of the platform:
+
+- **Search Rankings**: Higher-rated gigs appear more prominently
+- **Client Decisions**: Reviews help clients choose freelancers
+- **Freelancer Reputation**: Builds credibility and trust
+- **Gig Visibility**: Well-reviewed gigs get better exposure
+- **Profile Showcase**: Overall rating displayed on freelancer profiles
+
+## User Workflows
+
+### For Clients: Leaving a Review
+
+<Steps>
+  <Step title="Complete an Order">
+    Reviews can only be left after an order reaches **Completed** status. This ensures reviews reflect actual work experience.
+  </Step>
+  
+  <Step title="Access Review Form">
+    Navigate to the completed order or receive a review request notification. Click "Leave Review" or "Rate Order."
+  </Step>
+  
+  <Step title="Rate the Experience">
+    Select a star rating from 1 to 5:
+    - **5 stars**: Excellent, exceeded expectations
+    - **4 stars**: Good, met expectations
+    - **3 stars**: Average, acceptable work
+    - **2 stars**: Below expectations, issues present
+    - **1 star**: Poor, significant problems
+  </Step>
+  
+  <Step title="Write Your Feedback">
+    Provide detailed comments about:
+    - Quality of deliverables
+    - Communication and professionalism
+    - Timeliness of delivery
+    - Value for money
+    - Any issues or outstanding aspects
+  </Step>
+  
+  <Step title="Submit Review">
+    Publish your review. It appears immediately on the gig page and contributes to the freelancer's overall rating.
+  </Step>
+</Steps>
+
+<Note>
+  Be honest and constructive. Reviews help the community and give freelancers valuable feedback for improvement.
+</Note>
+
+### For Freelancers: Managing Reviews
+
+<Tabs>
+  <Tab title="Receiving Reviews">
+    When clients leave reviews:
+    - Receive notification of new review
+    - Review appears on your profile and gig page
+    - Overall rating is automatically updated
+    - Review influences gig rankings
+    
+    **You cannot edit or delete client reviews**, maintaining authenticity.
+  </Tab>
+  
+  <Tab title="Monitoring Reputation">
+    Track your reputation through:
+    - **Overall Rating**: Average of all reviews across all gigs
+    - **Number of Reviews**: Total review count displayed
+    - **Recent Reviews**: See latest feedback
+    - **Gig-Specific Ratings**: Track performance per service
+    
+    High ratings (4.5+ stars) significantly improve visibility and trust.
+  </Tab>
+  
+  <Tab title="Improving Ratings">
+    Maintain high ratings by:
+    - Delivering quality work consistently
+    - Communicating clearly and promptly
+    - Meeting or exceeding deadlines
+    - Honoring revision commitments
+    - Being professional and responsive
+    - Setting realistic expectations in gig descriptions
+  </Tab>
+</Tabs>
+
+## Rating Calculation
+
+### Freelancer Overall Rating
+
+The overall rating displayed on a freelancer's profile is calculated as:
+
+```
+Overall Rating = Sum of all ratings / Number of reviews
+```
+
+**Example:**
+- Review 1: 5 stars
+- Review 2: 4 stars  
+- Review 3: 5 stars
+- Review 4: 4 stars
+
+**Overall Rating** = (5 + 4 + 5 + 4) / 4 = **4.5 stars**
+
+### Gig-Specific Ratings
+
+Each gig can have its own rating based on reviews for that specific service:
+
+```
+Gig Rating = Sum of gig's review ratings / Number of reviews for that gig
+```
+
+This allows freelancers to see which services are most successful.
+
+## Important Fields
+
+### Review Model
+
+<ResponseField name="id" type="string">
+  Unique review identifier
+</ResponseField>
+
+<ResponseField name="rating" type="integer" required>
+  Star rating from 1-5
+</ResponseField>
+
+<ResponseField name="comment" type="string" required>
+  Written review feedback
+</ResponseField>
+
+<ResponseField name="gigId" type="string">
+  Gig being reviewed
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  Client who wrote the review
+</ResponseField>
+
+<ResponseField name="createdAt" type="datetime">
+  When the review was posted
+</ResponseField>
+
+<ResponseField name="updatedAt" type="datetime">
+  Last modification timestamp
+</ResponseField>
+
+## Review Display
+
+Reviews appear in multiple locations:
+
+<AccordionGroup>
+  <Accordion title="On Gig Pages">
+    All reviews for a specific gig are displayed, showing:
+    - Reviewer name and profile picture
+    - Star rating
+    - Written comment
+    - Date posted
+    - Most recent reviews appear first
+  </Accordion>
+  
+  <Accordion title="On Freelancer Profiles">
+    The profile shows:
+    - Overall average rating (e.g., 4.8 stars)
+    - Total number of reviews
+    - Recent reviews across all gigs
+    - Rating breakdown if implemented
+  </Accordion>
+  
+  <Accordion title="In Search Results">
+    Gig listings display:
+    - Star rating badge
+    - Number of reviews
+    - Helps clients filter by quality
+  </Accordion>
+</AccordionGroup>
+
+## Review Guidelines
+
+### For Clients Writing Reviews
+
+<Warning>
+  Write honest, professional reviews. Abusive, false, or malicious reviews may be removed and can result in account penalties.
+</Warning>
+
+**Good Review Practices:**
+- Be specific about what you liked or didn't like
+- Focus on the work quality and experience
+- Provide constructive feedback
+- Be fair and honest
+- Mention standout positives
+- Explain any negatives clearly
+
+**Avoid:**
+- Personal attacks or insults
+- Threats or intimidation
+- Irrelevant information
+- Reviews unrelated to the actual service
+- Extreme reactions for minor issues
+
+### For Freelancers Responding to Reviews
+
+<Info>
+  While you cannot edit client reviews, you can respond professionally through messaging or public responses (if the feature is implemented).
+</Info>
+
+**How to Handle Negative Reviews:**
+- Thank the client for feedback
+- Address specific concerns professionally
+- Offer solutions or explanations
+- Learn and improve from criticism
+- Don't argue or become defensive
+- Use it as an opportunity to show professionalism
+
+## Rating Tiers & Meanings
+
+<CardGroup cols={2}>
+  <Card title="5 Stars - Exceptional" icon="star">
+    Outstanding work that exceeded expectations. Highly recommended.
+  </Card>
+  
+  <Card title="4 Stars - Great" icon="star">
+    High-quality work that met expectations. Would work with again.
+  </Card>
+  
+  <Card title="3 Stars - Good" icon="star">
+    Acceptable work with room for improvement. Met basic requirements.
+  </Card>
+  
+  <Card title="2-1 Stars - Poor" icon="star">
+    Significant issues or unmet expectations. Major improvements needed.
+  </Card>
+</CardGroup>
+
+## Building Your Reputation
+
+<Steps>
+  <Step title="Start Strong">
+    Your first few reviews set expectations. Deliver exceptional work on early orders to build momentum.
+  </Step>
+  
+  <Step title="Maintain Quality">
+    Consistency is key. Every order should meet your quality standards to maintain high ratings.
+  </Step>
+  
+  <Step title="Encourage Reviews">
+    After successful delivery, politely remind clients to leave reviews if they're satisfied.
+  </Step>
+  
+  <Step title="Learn from Feedback">
+    Use lower ratings as learning opportunities. Identify patterns and make improvements.
+  </Step>
+  
+  <Step title="Scale Gradually">
+    Don't take on more work than you can handle. Quality over quantity protects your rating.
+  </Step>
+</Steps>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Orders & Payments" icon="credit-card" href="/features/orders-payments">
+    Complete orders to receive reviews
+  </Card>
+  
+  <Card title="Freelancer Profiles" icon="user" href="/features/freelancer-profiles">
+    Reviews appear on your profile
+  </Card>
+  
+  <Card title="Gig Marketplace" icon="store" href="/features/gig-marketplace">
+    Reviews displayed on gig pages
+  </Card>
+  
+  <Card title="Messaging" icon="message" href="/features/messaging">
+    Address concerns before they become negative reviews
+  </Card>
+</CardGroup>
+
+<Tip>
+  A strong review profile with 4.5+ stars and multiple reviews can dramatically increase your order volume and allow you to charge premium prices.
+</Tip>

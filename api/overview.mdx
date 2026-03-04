@@ -1,0 +1,328 @@
+---
+title: API Overview
+description: Overview of the Khedma Market tRPC API architecture and available routers
+---
+
+## Introduction
+
+Khedma Market uses [tRPC](https://trpc.io) to build a type-safe API layer between the client and server. This provides end-to-end type safety from your database to your frontend components without code generation.
+
+## Architecture
+
+### What is tRPC?
+
+tRPC allows you to easily build & consume fully typesafe APIs without schemas or code generation. It leverages TypeScript to provide:
+
+- **Type Safety**: Full type inference from server to client
+- **Auto-completion**: IDE support for all API endpoints
+- **Runtime Safety**: Validation using Zod schemas
+- **Developer Experience**: No need to maintain separate API documentation
+
+### Core Components
+
+The tRPC setup in Khedma Market consists of:
+
+1. **Root Router** (`~/workspace/source/src/server/api/root.ts:13-23`): Combines all feature routers
+2. **Context** (`~/workspace/source/src/server/api/trpc.ts:29-36`): Provides database and session access to procedures
+3. **Procedures**: Public and protected endpoints for each feature
+4. **Client** (`~/workspace/source/src/trpc/react.tsx`): React Query integration for the frontend
+
+## Base URL
+
+The tRPC API is available at:
+
+```
+/api/trpc
+```
+
+The actual URL is determined by the environment:
+
+- **Development**: `http://localhost:3000/api/trpc`
+- **Production**: `https://your-domain.com/api/trpc`
+- **Vercel**: `https://${VERCEL_URL}/api/trpc`
+
+See `~/workspace/source/src/trpc/shared.ts:8-15` for the implementation.
+
+## Available Routers
+
+Khedma Market has 9 feature routers:
+
+### User Router
+**Namespace**: `user`  
+**Features**:
+- User profile management
+- Personal information updates
+- Security settings (password, 2FA)
+- Username availability checking
+- Account role management (client/freelancer/company)
+- Company creation
+
+**Example procedures**:
+- `getUserbyUsername` (protected)
+- `updateUserPersonalInfo` (protected)
+- `updateUserSecurityInfo` (protected)
+- `checkUsername` (protected)
+- `updateAccount` (protected)
+- `createCompany` (protected)
+
+### File Router
+**Namespace**: `file`  
+**Features**: File upload and management
+
+### Order Router
+**Namespace**: `order`  
+**Features**: Order creation, tracking, and management
+
+### Profile Router
+**Namespace**: `profile`  
+**Features**: Public profile management and display
+
+### Category Router
+**Namespace**: `category`  
+**Features**: Category and subcategory management
+
+### Gig Router
+**Namespace**: `gig`  
+**Features**:
+- Gig creation and drafts
+- Package management (basic, standard, premium)
+- Description and FAQ updates
+- Gallery/attachment management
+- Publishing and deletion
+- User gig listings
+
+**Example procedures**:
+- `createDraft` (protected)
+- `updateOverview` (protected)
+- `createPackages` (protected)
+- `updateDescriptionFaq` (protected)
+- `updateGallery` (protected)
+- `publish` (protected)
+- `delete` (protected)
+- `getUserGigs` (protected)
+
+### Project Router
+**Namespace**: `project`  
+**Features**: Project posting and management
+
+### Conversation Router
+**Namespace**: `conversation`  
+**Features**: Messaging and conversation management
+
+### Job Router
+**Namespace**: `job`  
+**Features**: Job posting and application management
+
+## Making API Calls
+
+### Client-Side (React Components)
+
+Khedma Market uses `@trpc/react-query` for client-side API calls. The API client is exported from `~/workspace/source/src/trpc/react.tsx:16`.
+
+#### Queries
+
+```typescript
+import { api } from "@/trpc/react";
+
+function UserProfile({ username }: { username: string }) {
+  const { data, isLoading, error } = api.user.getUserbyUsername.useQuery({
+    username,
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+
+  return <div>{data?.username}</div>;
+}
+```
+
+#### Mutations
+
+```typescript
+import { api } from "@/trpc/react";
+
+function UpdateProfile() {
+  const utils = api.useContext();
+  const mutation = api.user.updateUserPersonalInfo.useMutation({
+    onSuccess: () => {
+      // Invalidate and refetch user data
+      utils.user.getUserbyUsername.invalidate();
+    },
+  });
+
+  const handleSubmit = (data: PersonalInfo) => {
+    mutation.mutate(data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {/* form fields */}
+    </form>
+  );
+}
+```
+
+### Server-Side (Server Components)
+
+For Next.js Server Components and API routes:
+
+```typescript
+import { appRouter } from "@/server/api/root";
+import { createTRPCContext } from "@/server/api/trpc";
+
+export async function getUserData(username: string) {
+  const context = await createTRPCContext({ headers: new Headers() });
+  const caller = appRouter.createCaller(context);
+  
+  return await caller.user.getUserbyUsername({ username });
+}
+```
+
+## Error Handling
+
+### Error Types
+
+tRPC uses specific error codes based on HTTP status codes:
+
+- `UNAUTHORIZED`: User is not authenticated (401)
+- `FORBIDDEN`: User lacks permission (403)
+- `NOT_FOUND`: Resource doesn't exist (404)
+- `BAD_REQUEST`: Invalid input data (400)
+- `UNPROCESSABLE_CONTENT`: Valid input but cannot process (422)
+- `INTERNAL_SERVER_ERROR`: Server error (500)
+
+### Error Formatting
+
+Errors include Zod validation details when input validation fails (`~/workspace/source/src/server/api/trpc.ts:48-57`):
+
+```typescript
+{
+  message: "Validation error",
+  code: "BAD_REQUEST",
+  data: {
+    zodError: {
+      fieldErrors: {
+        email: ["Invalid email format"],
+        password: ["Password too short"]
+      }
+    }
+  }
+}
+```
+
+### Handling Errors in React
+
+```typescript
+const mutation = api.user.updateAccount.useMutation({
+  onError: (error) => {
+    if (error.data?.code === "BAD_REQUEST") {
+      // Handle validation errors
+      const zodError = error.data.zodError;
+      console.error(zodError?.fieldErrors);
+    }
+  },
+});
+```
+
+### Custom Error Throwing
+
+In procedures, throw errors using `TRPCError`:
+
+```typescript
+import { TRPCError } from "@trpc/server";
+
+if (!user) {
+  throw new TRPCError({
+    code: "NOT_FOUND",
+    message: "User not found",
+  });
+}
+
+if (usernameExists) {
+  throw new TRPCError({
+    code: "BAD_REQUEST",
+    message: "Username already taken",
+    cause: { username: "Username already taken" },
+  });
+}
+```
+
+See examples in `~/workspace/source/src/server/api/routers/user.ts:76-80` and `~/workspace/source/src/server/api/routers/gig.ts:30-34`.
+
+## Type Safety Benefits
+
+### Input/Output Type Inference
+
+Khedma Market exports type helpers for inferring router types:
+
+```typescript
+import { type RouterInput, type RouterOutput } from "@/server/api/root";
+
+// Get input type for a procedure
+type UpdateAccountInput = RouterInput["user"]["updateAccount"];
+
+// Get output type for a procedure
+type UserGigsOutput = RouterOutput["gig"]["getUserGigs"];
+```
+
+See `~/workspace/source/src/server/api/root.ts:27-28` for the implementation.
+
+### Zod Schema Validation
+
+All inputs are validated using Zod schemas before reaching your procedure:
+
+```typescript
+import { z } from "zod";
+
+export const userRouter = createTRPCRouter({
+  updateAccount: protectedProcedure
+    .input(
+      z.object({
+        signUpAs: z.enum(["client", "freelancer", "company"]).default("client"),
+        username: z.string(),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      // input is fully typed and validated
+      const { signUpAs, username } = input;
+      // ...
+    }),
+});
+```
+
+### SuperJSON Transformer
+
+Khedma Market uses SuperJSON to serialize complex JavaScript types (Date, Map, Set, etc.) across the network without losing type information.
+
+This is configured in:
+- Server: `~/workspace/source/src/server/api/trpc.ts:47`
+- Client: `~/workspace/source/src/trpc/shared.ts:6`
+
+## Data Transformer
+
+The API uses [SuperJSON](https://github.com/blitz-js/superjson) for data serialization, which allows:
+
+- **Date objects**: Automatically serialized/deserialized
+- **undefined values**: Preserved (unlike JSON)
+- **BigInt, Map, Set**: Supported types
+
+```typescript
+// Server returns a Date object
+return {
+  createdAt: new Date(),
+};
+
+// Client receives actual Date object (not string)
+const { data } = api.gig.getUserGigs.useQuery({ id });
+console.log(data.createdAt instanceof Date); // true
+```
+
+## Next Steps
+
+- [Authentication](/api/authentication) - Learn about protected procedures and session management
+- [User Endpoints](/api/users) - User management endpoints
+- [Gig Endpoints](/api/gigs) - Gig creation and management endpoints
+- [Order Endpoints](/api/orders) - Order and payment management
+- [Job Endpoints](/api/jobs) - Job posting and application management
+- [Conversation Endpoints](/api/conversations) - Messaging endpoints
+- [Profile Endpoints](/api/profiles) - Profile management endpoints

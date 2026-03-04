@@ -1,0 +1,568 @@
+---
+title: Authentication
+description: NextAuth setup, providers, session management, and protected routes in Khedma Market
+---
+
+## Overview
+
+Khedma Market uses [NextAuth.js](https://next-auth.js.org) for authentication, providing multiple authentication methods including OAuth providers and credentials-based login with support for two-factor authentication.
+
+## NextAuth Configuration
+
+The authentication system is configured in `~/workspace/source/src/server/auth.ts:39-153`.
+
+### Key Features
+
+- **Multiple Providers**: GitHub, Google, and Credentials (email/password)
+- **JWT Strategy**: Session tokens stored as JWTs
+- **Prisma Adapter**: Database session storage using Prisma ORM
+- **Extended User Model**: Custom user fields (role, username, 2FA status)
+- **Email Verification**: Required for credentials-based sign-in
+- **Two-Factor Authentication**: Optional 2FA support
+
+## Authentication Providers
+
+Khedma Market supports three authentication providers:
+
+### 1. GitHub OAuth
+
+Allows users to sign in with their GitHub account.
+
+**Configuration** (`~/workspace/source/src/server/auth.ts:108-112`):
+
+```typescript
+GithubProvider({
+  clientId: env.GITHUB_CLIENT_ID,
+  clientSecret: env.GITHUB_CLIENT_SECRET,
+  allowDangerousEmailAccountLinking: true,
+})
+```
+
+**Required environment variables**:
+
+```bash
+GITHUB_CLIENT_ID="your_github_client_id"
+GITHUB_CLIENT_SECRET="your_github_client_secret"
+```
+
+See `.env.example:13-14` for reference.
+
+### 2. Google OAuth
+
+Allows users to sign in with their Google account.
+
+**Configuration** (`~/workspace/source/src/server/auth.ts:113-117`):
+
+```typescript
+GoogleProvider({
+  clientId: env.GOOGLE_CLIENT_ID,
+  clientSecret: env.GOOGLE_CLIENT_SECRET,
+  allowDangerousEmailAccountLinking: true,
+})
+```
+
+**Required environment variables**:
+
+```bash
+GOOGLE_CLIENT_ID="your_google_client_id"
+GOOGLE_CLIENT_SECRET="your_google_client_secret"
+```
+
+<Note>
+The Google OAuth credentials are not currently listed in `.env.example` but are required in your actual `.env` file.
+</Note>
+
+### 3. Credentials Provider
+
+Email and password authentication with bcrypt password hashing.
+
+**Configuration** (`~/workspace/source/src/server/auth.ts:118-135`):
+
+```typescript
+Credentials({
+  async authorize(credentials) {
+    const validatedFields = LoginSchema.safeParse(credentials);
+    if (validatedFields.success) {
+      const { email, password } = validatedFields.data;
+      
+      const user = await getUserByEmail(email);
+      if (!user || !user.password) return null;
+      
+      const passwordsMatch = await bcrypt.compare(password, user.password);
+      
+      if (passwordsMatch) return user;
+    }
+    
+    return null;
+  },
+})
+```
+
+**Features**:
+- Zod schema validation for login inputs
+- bcrypt password comparison
+- Email verification required (see Sign-In Flow)
+- Two-factor authentication support
+
+## Environment Variables
+
+Required authentication environment variables (from `.env.example:5-14`):
+
+```bash
+# NextAuth Core
+NEXTAUTH_SECRET=""  # Generate with: openssl rand -base64 32
+NEXTAUTH_URL="http://localhost:3000"
+
+# GitHub OAuth
+GITHUB_CLIENT_ID=""
+GITHUB_CLIENT_SECRET=""
+
+# Google OAuth (add these to your .env)
+GOOGLE_CLIENT_ID=""
+GOOGLE_CLIENT_SECRET=""
+```
+
+## Extended User Model
+
+Khedma Market extends the default NextAuth user model with additional fields (`~/workspace/source/src/server/auth.ts:20-26`):
+
+```typescript
+export type ExtendedUser = DefaultSession["user"] & {
+  id: string;
+  role: role;  // "client" | "freelancer" | "company"
+  username: string;
+  isTwoFactorEnabled: boolean;
+  isOAuth: boolean;
+};
+```
+
+These fields are populated via the `jwt` and `session` callbacks.
+
+## Session Management
+
+### Session Strategy
+
+Khedma Market uses JWT-based sessions (`~/workspace/source/src/server/auth.ts:103-105`):
+
+```typescript
+session: {
+  strategy: "jwt",
+}
+```
+
+This means:
+- Sessions are stored as encrypted JWT tokens in cookies
+- No database queries needed for session validation
+- Faster performance for authenticated requests
+
+### Session Callbacks
+
+#### JWT Callback
+
+Populates the JWT token with user data from the database (`~/workspace/source/src/server/auth.ts:63-77`):
+
+```typescript
+async jwt({ token }) {
+  if (!token.sub) return token;
+  
+  const existingUser = await getUserById(token.sub);
+  if (!existingUser) return token;
+  
+  const existingAccount = await getAccountByUserId(existingUser.id);
+  
+  token.name = existingUser.name;
+  token.username = existingUser.username;
+  token.email = existingUser.email;
+  token.role = existingUser.role;
+  token.isOAuth = !!existingAccount;
+  token.isTwoFactorEnabled = existingUser.isTwoFactorEnabled;
+  
+  return token;
+}
+```
+
+#### Session Callback
+
+Transfers JWT token data to the session object (`~/workspace/source/src/server/auth.ts:41-61`):
+
+```typescript
+async session({ token, session }) {
+  if (token.sub && session.user) {
+    session.user.id = token.sub;
+  }
+  
+  if (token.role && session.user) {
+    session.user.role = token.role as role;
+  }
+  
+  if (session.user) {
+    session.user.isTwoFactorEnabled = token.isTwoFactorEnabled as boolean;
+    session.user.name = token.name;
+    session.user.username = token.username as string;
+    session.user.email = token.email;
+    session.user.isOAuth = token.isOAuth as boolean;
+  }
+  
+  return session;
+}
+```
+
+### Getting the Session
+
+Use the `getServerAuthSession` helper to access session data:
+
+```typescript
+import { getServerAuthSession } from "@/server/auth";
+
+export default async function ProfilePage() {
+  const session = await getServerAuthSession();
+  
+  if (!session) {
+    return <div>Not authenticated</div>;
+  }
+  
+  return (
+    <div>
+      <h1>Welcome, {session.user.name}</h1>
+      <p>Role: {session.user.role}</p>
+      <p>Username: {session.user.username}</p>
+    </div>
+  );
+}
+```
+
+Implementation: `~/workspace/source/src/server/auth.ts:155`
+
+## Protected Procedures
+
+tRPC procedures can be public or protected. Protected procedures require authentication.
+
+### Public Procedures
+
+Accessible without authentication (`~/workspace/source/src/server/api/trpc.ts:81`):
+
+```typescript
+export const publicProcedure = t.procedure;
+```
+
+Example usage:
+```typescript
+export const publicRouter = createTRPCRouter({
+  getCategories: publicProcedure.query(async () => {
+    return await db.category.findMany();
+  }),
+});
+```
+
+### Protected Procedures
+
+Require authentication and guarantee `ctx.session.user` exists (`~/workspace/source/src/server/api/trpc.ts:91-102`):
+
+```typescript
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  if (!ctx.session || !ctx.session.user) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  
+  return next({
+    ctx: {
+      session: { ...ctx.session, user: ctx.session.user },
+    },
+  });
+});
+```
+
+### Using Protected Procedures
+
+All user-specific operations use `protectedProcedure`:
+
+```typescript
+export const userRouter = createTRPCRouter({
+  updateUserPersonalInfo: protectedProcedure
+    .input(personalFormSchema)
+    .mutation(async ({ input, ctx }) => {
+      // ctx.session.user is guaranteed to exist
+      await ctx.db.user.update({
+        where: { id: ctx.session.user.id },
+        data: input,
+      });
+    }),
+});
+```
+
+See `~/workspace/source/src/server/api/routers/user.ts:31-57` for a real example.
+
+## Sign-In Flow
+
+The sign-in callback enforces security rules (`~/workspace/source/src/server/auth.ts:78-101`):
+
+### OAuth Sign-In
+
+```typescript
+async signIn({ user, account }) {
+  // Allow OAuth without email verification
+  if (account?.provider !== "credentials") return true;
+  
+  // ... credentials validation
+}
+```
+
+OAuth users (GitHub, Google) can sign in immediately without email verification.
+
+### Credentials Sign-In
+
+```typescript
+const existingUser = await getUserById(user.id);
+
+// Prevent sign in without email verification
+if (!existingUser?.emailVerified) return false;
+
+if (existingUser.isTwoFactorEnabled) {
+  const twoFactorConfirmation = await getTwoFactorConfirmationByUserId(
+    existingUser.id,
+  );
+  
+  if (!twoFactorConfirmation) return false;
+  
+  // Delete two factor confirmation for next sign in
+  await db.twoFactorConfirmation.delete({
+    where: { id: twoFactorConfirmation.id },
+  });
+}
+
+return true;
+```
+
+**Requirements**:
+1. Email must be verified
+2. If 2FA enabled, two-factor confirmation must exist
+3. 2FA confirmation is deleted after successful sign-in (one-time use)
+
+## Two-Factor Authentication
+
+Users can enable 2FA for additional security:
+
+### Enabling 2FA
+
+```typescript
+const mutation = api.user.updateUserSecurityInfo.useMutation();
+
+mutation.mutate({
+  isTwoFactorEnabled: true,
+});
+```
+
+See implementation in `~/workspace/source/src/server/api/routers/user.ts:58-69`.
+
+### 2FA Sign-In Flow
+
+1. User enters email/password
+2. If `isTwoFactorEnabled` is true, prompt for 2FA code
+3. Verify code and create `TwoFactorConfirmation` record
+4. Sign in proceeds with confirmation check
+5. Confirmation record is deleted after successful sign-in
+
+The logic is in the `signIn` callback at `~/workspace/source/src/server/auth.ts:87-98`.
+
+## Account Linking
+
+Both OAuth providers have `allowDangerousEmailAccountLinking: true`, which automatically links OAuth accounts with existing accounts that share the same email address.
+
+**When an account is linked** (`~/workspace/source/src/server/auth.ts:137-143`):
+
+```typescript
+events: {
+  async linkAccount({ user }) {
+    await db.user.update({
+      where: { id: user.id },
+      data: { emailVerified: new Date() },
+    });
+  },
+}
+```
+
+The email is automatically marked as verified.
+
+## Custom Auth Pages
+
+Khedma Market uses custom authentication pages (`~/workspace/source/src/server/auth.ts:148-151`):
+
+```typescript
+pages: {
+  signIn: "/auth/sign-in",
+  error: "/auth/error",
+}
+```
+
+This redirects authentication flows to your custom UI instead of NextAuth's default pages.
+
+## Client-Side Auth Helpers
+
+NextAuth exports authentication helpers for client use (`~/workspace/source/src/server/auth.ts:157-159`):
+
+```typescript
+export const { auth, signIn, signOut, update } = NextAuth({
+  ...authOptions,
+});
+```
+
+### Sign In
+
+```typescript
+import { signIn } from "@/server/auth";
+
+await signIn("github");
+await signIn("google");
+await signIn("credentials", {
+  email: "user@example.com",
+  password: "password123",
+});
+```
+
+### Sign Out
+
+```typescript
+import { signOut } from "@/server/auth";
+
+await signOut();
+```
+
+### Update Session
+
+```typescript
+import { update } from "@/server/auth";
+
+await update({
+  user: {
+    name: "New Name",
+  },
+});
+```
+
+## Accessing Session in tRPC Context
+
+Every tRPC procedure has access to the session via context (`~/workspace/source/src/server/api/trpc.ts:29-36`):
+
+```typescript
+export const createTRPCContext = async (opts: { headers: Headers }) => {
+  const session = await getServerAuthSession();
+  
+  return {
+    db,
+    session,
+    ...opts,
+  };
+};
+```
+
+**In any procedure**:
+
+```typescript
+export const exampleRouter = createTRPCRouter({
+  myProcedure: publicProcedure.query(({ ctx }) => {
+    if (ctx.session?.user) {
+      // User is authenticated
+      return { message: `Hello ${ctx.session.user.name}` };
+    }
+    return { message: "Hello guest" };
+  }),
+});
+```
+
+## Debug Mode
+
+NextAuth debug mode is enabled in development (`~/workspace/source/src/server/auth.ts:152`):
+
+```typescript
+debug: process.env.NODE_ENV === "development",
+```
+
+This provides detailed logs for authentication flows during development.
+
+## Best Practices
+
+### 1. Always Use Protected Procedures for User Data
+
+```typescript
+// Good
+export const userRouter = createTRPCRouter({
+  updateProfile: protectedProcedure
+    .input(profileSchema)
+    .mutation(({ input, ctx }) => {
+      // ctx.session.user guaranteed to exist
+    }),
+});
+
+// Bad - allows unauthorized access
+export const userRouter = createTRPCRouter({
+  updateProfile: publicProcedure  // ❌ Anyone can call this!
+    .input(profileSchema)
+    .mutation(({ input, ctx }) => {
+      // ctx.session.user might be null!
+    }),
+});
+```
+
+### 2. Check User Ownership
+
+Always verify the authenticated user owns the resource:
+
+```typescript
+export const gigRouter = createTRPCRouter({
+  delete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const gig = await ctx.db.gig.findUnique({
+        where: {
+          id: input.id,
+          ownerId: ctx.session.user.id,  // ✅ Check ownership
+        },
+      });
+      
+      if (!gig) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Gig not found",
+        });
+      }
+      
+      return await ctx.db.gig.delete({
+        where: { id: input.id },
+      });
+    }),
+});
+```
+
+See `~/workspace/source/src/server/api/routers/gig.ts:333-354` for reference.
+
+### 3. Use Role-Based Access Control
+
+```typescript
+export const companyRouter = createTRPCRouter({
+  createCompany: protectedProcedure
+    .input(companySchema)
+    .mutation(async ({ ctx, input }) => {
+      // Check user role
+      if (ctx.session.user.role !== "company") {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only company accounts can create companies",
+        });
+      }
+      
+      return await ctx.db.company.create({
+        data: {
+          ...input,
+          userId: ctx.session.user.id,
+        },
+      });
+    }),
+});
+```
+
+See `~/workspace/source/src/server/api/routers/user.ts:209-235` for reference.
+
+## Next Steps
+
+- [API Overview](/api/overview) - Learn about tRPC setup and available routers
+- [User Endpoints](/api/users) - User management endpoints

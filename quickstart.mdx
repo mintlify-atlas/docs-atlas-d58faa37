@@ -1,80 +1,461 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get Khedma Market running locally in minutes
 ---
 
-## Get started in three steps
+## Prerequisites
 
-Get your documentation site running locally and make your first customization.
+Before you begin, ensure you have the following installed on your system:
 
-### Step 1: Set up your local environment
+- **Node.js 18+** - [Download Node.js](https://nodejs.org/)
+- **pnpm 8.6+** - Fast package manager (install with `npm install -g pnpm`)
+- **MySQL 8.0+** - Database server [Download MySQL](https://dev.mysql.com/downloads/)
+- **Git** - Version control system
+
+<Info>
+  Khedma Market uses **pnpm** as its package manager. While npm and yarn may work, pnpm is recommended for consistency with the project configuration.
+</Info>
+
+## Setup Guide
+
+Follow these steps to get Khedma Market running on your local machine:
+
+<Steps>
+  <Step title="Clone the repository">
+    Clone the Khedma Market repository from GitHub:
+    
+    ```bash
+    git clone https://github.com/elguarir/khedma-market.git
+    cd khedma-market
+    ```
+    
+    This downloads the complete source code to your local machine.
+  </Step>
+
+  <Step title="Install dependencies">
+    Install all required packages using pnpm:
+    
+    ```bash
+    pnpm install
+    ```
+    
+    This command:
+    - Installs all dependencies from `package.json`
+    - Automatically runs `prisma generate` via the postinstall script
+    - Creates the Prisma Client for database access
+    
+    <Note>
+      The installation may take 2-3 minutes depending on your internet connection.
+    </Note>
+  </Step>
+
+  <Step title="Setup MySQL database">
+    Create a new MySQL database for Khedma Market:
+    
+    <CodeGroup>
+    
+    ```bash Terminal
+    # Start MySQL (if not already running)
+    sudo systemctl start mysql  # Linux
+    # or
+    brew services start mysql   # macOS
+    
+    # Connect to MySQL
+    mysql -u root -p
+    ```
+    
+    ```sql MySQL
+    -- Create the database
+    CREATE DATABASE `khedma-market`;
+    
+    -- Verify database creation
+    SHOW DATABASES;
+    
+    -- Exit MySQL
+    EXIT;
+    ```
+    
+    </CodeGroup>
+    
+    <Warning>
+      Make sure your MySQL server is running before proceeding to the next step.
+    </Warning>
+    
+    <Accordion title="Using the provided start-database.sh script">
+      The repository includes a `start-database.sh` script that can help you set up a database quickly:
+      
+      ```bash
+      chmod +x start-database.sh
+      ./start-database.sh
+      ```
+      
+      This script automates MySQL setup for local development.
+    </Accordion>
+  </Step>
+
+  <Step title="Configure environment variables">
+    Create a `.env` file in the root directory by copying the example file:
+    
+    ```bash
+    cp .env.example .env
+    ```
+    
+    Edit the `.env` file with your configuration:
+    
+    ```bash .env
+    # Database Connection
+    DATABASE_URL="mysql://root:password@localhost:3306/khedma-market"
+    
+    # NextAuth Configuration
+    # Generate with: openssl rand -base64 32
+    NEXTAUTH_SECRET="your-super-secret-key-here"
+    NEXTAUTH_URL="http://localhost:3000"
+    
+    # OAuth Providers (Optional)
+    GITHUB_CLIENT_ID="your-github-client-id"
+    GITHUB_CLIENT_SECRET="your-github-client-secret"
+    
+    GOOGLE_CLIENT_ID="your-google-client-id"
+    GOOGLE_CLIENT_SECRET="your-google-client-secret"
+    
+    # Email Service (Optional)
+    RESEND_API_KEY="your-resend-api-key"
+    FROM_EMAIL="noreply@yourdomain.com"
+    ```
+    
+    <Accordion title="Environment variable details">
+      **Required:**
+      - `DATABASE_URL` - MySQL connection string (update username/password if different)
+      - `NEXTAUTH_SECRET` - Secret key for NextAuth.js session encryption
+      - `NEXTAUTH_URL` - Base URL of your application
+      
+      **Optional (for full functionality):**
+      - `GITHUB_CLIENT_ID` & `GITHUB_CLIENT_SECRET` - Enable GitHub OAuth login
+      - `GOOGLE_CLIENT_ID` & `GOOGLE_CLIENT_SECRET` - Enable Google OAuth login  
+      - `RESEND_API_KEY` - Email service for verification emails
+      - `FROM_EMAIL` - Sender email address for transactional emails
+    </Accordion>
+    
+    <Accordion title="Generate NEXTAUTH_SECRET">
+      Generate a secure secret key using OpenSSL:
+      
+      ```bash
+      openssl rand -base64 32
+      ```
+      
+      Copy the output and paste it as your `NEXTAUTH_SECRET` value.
+    </Accordion>
+    
+    <Accordion title="Setup OAuth providers (Optional)">
+      To enable social login:
+      
+      **GitHub OAuth:**
+      1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+      2. Create a new OAuth App
+      3. Set Authorization callback URL to: `http://localhost:3000/api/auth/callback/github`
+      4. Copy Client ID and Client Secret to your `.env`
+      
+      **Google OAuth:**
+      1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+      2. Create a new project and enable OAuth
+      3. Set Authorized redirect URI to: `http://localhost:3000/api/auth/callback/google`
+      4. Copy Client ID and Client Secret to your `.env`
+    </Accordion>
+  </Step>
+
+  <Step title="Run database migrations">
+    Apply all database migrations to create the schema:
+    
+    ```bash
+    pnpm db:migrate
+    ```
+    
+    This command:
+    - Creates all tables in your MySQL database
+    - Sets up relationships and indexes
+    - Applies any pending migrations
+    
+    <Note>
+      You should see output indicating successful migration of tables like users, gigs, orders, conversations, etc.
+    </Note>
+    
+    <Accordion title="Alternative: Push schema directly">
+      For rapid development without migrations:
+      
+      ```bash
+      pnpm db:push
+      ```
+      
+      This pushes the Prisma schema directly to the database without creating migration files.
+    </Accordion>
+    
+    <Accordion title="Seed the database (Optional)">
+      Populate your database with sample data:
+      
+      ```bash
+      pnpm db:seed
+      ```
+      
+      This runs the seed script at `prisma/seed.ts` which can create:
+      - Sample users with different roles
+      - Example gigs and packages
+      - Test categories and skills
+      - Demo conversations and messages
+    </Accordion>
+  </Step>
+
+  <Step title="Start the development server">
+    Launch the Next.js development server:
+    
+    ```bash
+    pnpm dev
+    ```
+    
+    The application will start with:
+    - **Next.js server** running on `http://localhost:3000`
+    - **Turbopack** enabled for faster builds
+    - **Hot Module Replacement** for instant updates
+    
+    <Info>
+      The first build may take 30-60 seconds. Subsequent builds will be much faster thanks to Turbopack.
+    </Info>
+  </Step>
+
+  <Step title="Access the application">
+    Open your browser and navigate to:
+    
+    ```
+    http://localhost:3000
+    ```
+    
+    You should see the Khedma Market homepage!
+    
+    <Accordion title="Key pages to explore">
+      - `/` - Homepage with marketplace overview
+      - `/auth/sign-in` - Login page with credentials and OAuth options
+      - `/auth/sign-up` - Registration page for new users
+      - `/dashboard` - User dashboard (after authentication)
+      - `/gigs` - Browse available gigs/services
+      - `/jobs` - Job postings from companies
+    </Accordion>
+  </Step>
+</Steps>
+
+## Available Scripts
+
+Here are the most useful npm scripts for development:
+
+<CodeGroup>
+
+```bash Development
+# Start development server with Turbopack
+pnpm dev
+
+# Build for production
+pnpm build
+
+# Start production server
+pnpm start
+
+# Preview production build locally
+pnpm preview
+```
+
+```bash Database
+# Push schema changes to database
+pnpm db:push
+
+# Create a new migration
+pnpm db:migrate
+
+# Generate Prisma Client
+pnpm db:generate
+
+# Open Prisma Studio (database GUI)
+pnpm db:studio
+
+# Seed database with sample data
+pnpm db:seed
+```
+
+```bash Code Quality
+# Run ESLint
+pnpm lint
+
+# Format code with Prettier
+pnpm format
+
+# Type check with TypeScript
+pnpm type-check
+```
+
+</CodeGroup>
+
+## Project Structure
+
+Understanding the codebase structure:
+
+```
+khedma-market/
+├── prisma/
+│   ├── schema.prisma          # Database schema definition
+│   ├── seed.ts                # Database seeding script
+│   └── migrations/            # Migration history
+├── public/                    # Static assets
+├── src/
+│   ├── app/                   # Next.js App Router pages
+│   │   ├── (public)/         # Public pages (homepage, auth)
+│   │   ├── (dashboard)/      # Protected dashboard pages
+│   │   └── api/              # API routes
+│   ├── components/           # React components
+│   ├── server/
+│   │   ├── api/
+│   │   │   ├── routers/      # tRPC routers
+│   │   │   ├── trpc.ts       # tRPC configuration
+│   │   │   └── root.ts       # Root router
+│   │   ├── auth.ts           # NextAuth configuration
+│   │   └── db.ts             # Prisma client instance
+│   ├── trpc/                 # tRPC client setup
+│   ├── lib/                  # Utility functions
+│   ├── hooks/                # Custom React hooks
+│   ├── schemas/              # Zod validation schemas
+│   ├── styles/               # Global styles
+│   └── env.js                # Environment variable validation
+├── .env                      # Environment variables (create this)
+├── .env.example              # Environment template
+├── package.json              # Dependencies and scripts
+├── tsconfig.json             # TypeScript configuration
+└── tailwind.config.ts        # Tailwind CSS configuration
+```
+
+## Development Workflow
+
+<Steps>
+  <Step title="Make changes">
+    Edit files in `src/` directory. Changes will hot-reload automatically.
+  </Step>
+  
+  <Step title="Update database schema">
+    Modify `prisma/schema.prisma` and run migrations:
+    ```bash
+    pnpm db:migrate
+    ```
+  </Step>
+  
+  <Step title="Add tRPC routes">
+    Create or modify routers in `src/server/api/routers/` for new API endpoints.
+  </Step>
+  
+  <Step title="Test changes">
+    Test your changes in the browser at `http://localhost:3000`
+  </Step>
+</Steps>
+
+## Troubleshooting
 
 <AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+  <Accordion title="Database connection errors">
+    **Error:** `Can't reach database server`
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
+    **Solutions:**
+    - Verify MySQL is running: `sudo systemctl status mysql`
+    - Check DATABASE_URL in `.env` matches your MySQL credentials
+    - Ensure the database `khedma-market` exists
+    - Try connecting manually: `mysql -u root -p`
   </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+  
+  <Accordion title="Port 3000 already in use">
+    **Error:** `Port 3000 is already in use`
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
+    **Solutions:**
+    - Kill the process using port 3000:
+      ```bash
+      # Find process
+      lsof -ti:3000
+      # Kill it
+      kill -9 $(lsof -ti:3000)
+      ```
+    - Or use a different port:
+      ```bash
+      PORT=3001 pnpm dev
+      ```
+  </Accordion>
+  
+  <Accordion title="Prisma Client errors">
+    **Error:** `PrismaClient is unable to be run in the browser`
+    
+    **Solutions:**
+    - Make sure you're importing from `@/server/db` not `@prisma/client` in client components
+    - Regenerate Prisma Client: `pnpm db:generate`
+    - Restart the development server
+  </Accordion>
+  
+  <Accordion title="Authentication issues">
+    **Error:** `[next-auth][error][NO_SECRET]`
+    
+    **Solutions:**
+    - Ensure `NEXTAUTH_SECRET` is set in `.env`
+    - Generate a new secret: `openssl rand -base64 32`
+    - Verify `NEXTAUTH_URL` matches your local URL
+  </Accordion>
+  
+  <Accordion title="Module not found errors">
+    **Error:** `Cannot find module 'xyz'`
+    
+    **Solutions:**
+    - Clear node_modules and reinstall:
+      ```bash
+      rm -rf node_modules
+      pnpm install
+      ```
+    - Clear Next.js cache:
+      ```bash
+      rm -rf .next
+      pnpm dev
+      ```
   </Accordion>
 </AccordionGroup>
 
-### Step 2: Deploy your changes
+## Using Prisma Studio
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+Prisma Studio provides a visual database browser:
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+```bash
+pnpm db:studio
+```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+This opens a GUI at `http://localhost:5555` where you can:
+- Browse all database tables
+- View, create, update, and delete records
+- Test relationships between models
+- Execute raw SQL queries
 
-### Step 3: Go live
+<Tip>
+  Prisma Studio is extremely helpful for debugging database issues and understanding data relationships.
+</Tip>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+## Next Steps
 
-## Next steps
-
-Now that you have your docs running, explore these key features:
+Now that you have Khedma Market running locally:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Explore Features" icon="compass" href="/features/freelancer-profiles">
+    Learn about freelancer profiles, gigs, orders, and messaging
+  </Card>
+  
+  <Card title="API Documentation" icon="code" href="/api/overview">
+    Understand the tRPC API structure and available endpoints
+  </Card>
+  
+  <Card title="Database Schema" icon="database" href="/api/overview#database-schema">
+    Deep dive into the Prisma schema and data models
+  </Card>
+  
+  <Card title="User Guides" icon="book" href="/guides/freelancers">
+    Role-specific guides for using the platform
+  </Card>
 </CardGroup>
 
 <Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
+  **Contributing?** Check out the [CONTRIBUTING.md](https://github.com/elguarir/khedma-market/blob/main/CONTRIBUTING.md) file in the repository for guidelines on submitting pull requests.
 </Note>

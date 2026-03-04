@@ -1,0 +1,580 @@
+---
+title: 'Profiles API'
+description: 'Freelancer profile management including skills, languages, and portfolio'
+---
+
+## Overview
+
+The Profiles API manages freelancer profile information, including skills, languages, and professional descriptions. These endpoints help freelancers showcase their expertise to potential clients.
+
+## Queries
+
+### getSkills
+
+Retrieve all available skills in the system (public endpoint).
+
+**Input Parameters:** None
+
+**Response:**
+
+Array of skill objects ordered alphabetically by name.
+
+**Example:**
+
+```typescript
+const allSkills = await trpc.profile.getSkills.query();
+```
+
+---
+
+### getUserSkills
+
+Get all skills associated with the authenticated user.
+
+**Input Parameters:** None (uses authenticated user from context)
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  Skill ID
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Skill name (e.g., "React", "Node.js")
+</ResponseField>
+
+<ResponseField name="value" type="string">
+  URL-friendly slug
+</ResponseField>
+
+<ResponseField name="level" type="string">
+  Proficiency level: beginner, intermediate, advanced, or expert
+</ResponseField>
+
+**Example:**
+
+```typescript
+const mySkills = await trpc.profile.getUserSkills.query();
+
+for (const skill of mySkills) {
+  console.log(`${skill.name}: ${skill.level}`);
+}
+```
+
+---
+
+### getLanguages
+
+Retrieve all available languages in the system (public endpoint).
+
+**Input Parameters:** None
+
+**Response:**
+
+Array of language objects ordered alphabetically.
+
+**Example:**
+
+```typescript
+const languages = await trpc.profile.getLanguages.query();
+```
+
+---
+
+### getUserLanguages
+
+Get all languages the authenticated user speaks.
+
+**Input Parameters:** None (uses authenticated user from context)
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  Language ID
+</ResponseField>
+
+<ResponseField name="label" type="string">
+  Language name (e.g., "English", "Arabic")
+</ResponseField>
+
+<ResponseField name="value" type="string">
+  Language code
+</ResponseField>
+
+<ResponseField name="nativeName" type="string">
+  Native name of the language
+</ResponseField>
+
+<ResponseField name="level" type="string">
+  Proficiency level: basic, conversational, fluent, or native_or_bilingual
+</ResponseField>
+
+**Example:**
+
+```typescript
+const myLanguages = await trpc.profile.getUserLanguages.query();
+
+for (const lang of myLanguages) {
+  console.log(`${lang.label} (${lang.nativeName}): ${lang.level}`);
+}
+```
+
+---
+
+### getUserDescription
+
+Get the professional description for the authenticated user.
+
+**Input Parameters:** None (uses authenticated user from context)
+
+**Response:**
+
+<ResponseField name="description" type="string">
+  User's professional description/bio
+</ResponseField>
+
+**Example:**
+
+```typescript
+const profile = await trpc.profile.getUserDescription.query();
+console.log(profile.description);
+```
+
+---
+
+## Mutations
+
+### addSkill
+
+Add a new skill to the authenticated user's profile.
+
+**Input Parameters:**
+
+<ParamField path="name" type="string" required>
+  Skill name
+</ParamField>
+
+<ParamField path="level" type="enum" required>
+  Proficiency level:
+  - `beginner`: Just starting out
+  - `intermediate`: Some experience
+  - `advanced`: Extensive experience
+  - `expert`: Mastery level
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Created skill object
+</ResponseField>
+
+**Example:**
+
+```typescript
+const result = await trpc.profile.addSkill.mutate({
+  name: "React",
+  level: "expert"
+});
+
+console.log("Skill added:", result.user);
+```
+
+---
+
+### updateSkill
+
+Update an existing skill's name or proficiency level.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Skill ID to update
+</ParamField>
+
+<ParamField path="name" type="string" required>
+  Updated skill name
+</ParamField>
+
+<ParamField path="level" type="enum" required>
+  Updated proficiency level: beginner, intermediate, advanced, or expert
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Updated skill object
+</ResponseField>
+
+**Example:**
+
+```typescript
+await trpc.profile.updateSkill.mutate({
+  id: "skill_clxxx...",
+  name: "React.js",
+  level: "expert"
+});
+```
+
+---
+
+### removeSkill
+
+Remove a skill from the user's profile.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Skill ID to remove
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+**Example:**
+
+```typescript
+await trpc.profile.removeSkill.mutate({ 
+  id: "skill_clxxx..." 
+});
+```
+
+---
+
+### addLanguage
+
+Add a language to the user's profile.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Language ID from the languages table
+</ParamField>
+
+<ParamField path="level" type="enum" required>
+  Proficiency level:
+  - `basic`: Basic understanding
+  - `conversational`: Can hold conversations
+  - `fluent`: Fluent speaker
+  - `native_or_bilingual`: Native or bilingual proficiency
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Created user-language association
+</ResponseField>
+
+**Example:**
+
+```typescript
+// First, get available languages
+const languages = await trpc.profile.getLanguages.query();
+const arabic = languages.find(l => l.value === "ar");
+
+// Add Arabic to profile
+const result = await trpc.profile.addLanguage.mutate({
+  id: arabic.id,
+  level: "native_or_bilingual"
+});
+```
+
+---
+
+### updateLanguage
+
+Update the proficiency level for a language.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Language ID
+</ParamField>
+
+<ParamField path="level" type="enum" required>
+  Updated proficiency level: basic, conversational, fluent, or native_or_bilingual
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Updated user-language association
+</ResponseField>
+
+**Example:**
+
+```typescript
+await trpc.profile.updateLanguage.mutate({
+  id: "lang_clxxx...",
+  level: "fluent"
+});
+```
+
+---
+
+### removeLanguage
+
+Remove a language from the user's profile.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Language ID to remove
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+**Example:**
+
+```typescript
+await trpc.profile.removeLanguage.mutate({ 
+  id: "lang_clxxx..." 
+});
+```
+
+---
+
+### updateUserDescription
+
+Update the user's professional description/bio.
+
+**Input Parameters:**
+
+<ParamField path="description" type="string">
+  Professional description (optional, can be empty to clear)
+</ParamField>
+
+**Response:**
+
+Returns the updated User object.
+
+**Example:**
+
+```typescript
+const updated = await trpc.profile.updateUserDescription.mutate({
+  description: `Full-stack developer with 8+ years of experience.
+  
+Specializing in:
+  - React & Next.js
+  - Node.js & Express
+  - MongoDB & PostgreSQL
+  
+I help businesses build scalable web applications.`
+});
+```
+
+---
+
+## Skill Model
+
+### Skill Fields
+
+<ResponseField name="id" type="string">
+  Unique skill identifier (CUID)
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Skill name
+</ResponseField>
+
+<ResponseField name="value" type="string">
+  URL-friendly slug (auto-generated from name)
+</ResponseField>
+
+<ResponseField name="status" type="enum">
+  Skill status: active or inactive
+  
+  Default: active
+</ResponseField>
+
+<ResponseField name="level" type="string">
+  Proficiency level (beginner, intermediate, advanced, expert)
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of user who has this skill
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+---
+
+## Language Model
+
+### Language Fields
+
+<ResponseField name="id" type="string">
+  Unique language identifier (CUID)
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Language name (e.g., "English")
+</ResponseField>
+
+<ResponseField name="nativeName" type="string">
+  Native name (e.g., "العربية" for Arabic)
+</ResponseField>
+
+<ResponseField name="value" type="string">
+  Language code (e.g., "en", "ar", "fr")
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+---
+
+## UserLanguages Model
+
+Junction table connecting users to languages:
+
+<ResponseField name="userId" type="string">
+  User ID
+</ResponseField>
+
+<ResponseField name="languageId" type="string">
+  Language ID
+</ResponseField>
+
+<ResponseField name="level" type="string">
+  Proficiency level
+</ResponseField>
+
+**Composite Primary Key:** `[userId, languageId]`
+
+---
+
+## Server-Side Functions
+
+### getUserLanguages(userId: string)
+
+Fetch all languages for a user with formatted output.
+
+**Returns:** Array of language objects with labels and levels
+
+**Example:**
+
+```typescript
+import { getUserLanguages } from "@/server/api/routers/profile";
+
+const languages = await getUserLanguages("user_clxxx...");
+```
+
+---
+
+### getUserSkills(userId: string)
+
+Fetch all skills for a user.
+
+**Returns:** Array of skill objects
+
+**Example:**
+
+```typescript
+import { getUserSkills } from "@/server/api/routers/profile";
+
+const skills = await getUserSkills("user_clxxx...");
+```
+
+---
+
+### getUserDescription(userId: string)
+
+Fetch user description.
+
+**Returns:** Object with description field
+
+**Example:**
+
+```typescript
+import { getUserDescription } from "@/server/api/routers/profile";
+
+const profile = await getUserDescription("user_clxxx...");
+```
+
+---
+
+## Complete Example: Building a Profile
+
+```typescript
+// 1. Add professional description
+await trpc.profile.updateUserDescription.mutate({
+  description: "Experienced full-stack developer specializing in modern web technologies"
+});
+
+// 2. Add skills
+const skills = [
+  { name: "React", level: "expert" },
+  { name: "Node.js", level: "advanced" },
+  { name: "TypeScript", level: "expert" },
+  { name: "PostgreSQL", level: "intermediate" }
+];
+
+for (const skill of skills) {
+  await trpc.profile.addSkill.mutate(skill);
+}
+
+// 3. Add languages
+const languages = await trpc.profile.getLanguages.query();
+
+const english = languages.find(l => l.value === "en");
+const arabic = languages.find(l => l.value === "ar");
+const french = languages.find(l => l.value === "fr");
+
+await trpc.profile.addLanguage.mutate({
+  id: english.id,
+  level: "native_or_bilingual"
+});
+
+await trpc.profile.addLanguage.mutate({
+  id: arabic.id,
+  level: "fluent"
+});
+
+await trpc.profile.addLanguage.mutate({
+  id: french.id,
+  level: "conversational"
+});
+
+// 4. View complete profile
+const mySkills = await trpc.profile.getUserSkills.query();
+const myLanguages = await trpc.profile.getUserLanguages.query();
+const myDescription = await trpc.profile.getUserDescription.query();
+
+console.log("Profile complete!");
+console.log(`Skills: ${mySkills.length}`);
+console.log(`Languages: ${myLanguages.length}`);
+```

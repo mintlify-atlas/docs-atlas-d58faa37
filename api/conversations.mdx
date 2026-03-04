@@ -1,0 +1,416 @@
+---
+title: 'Conversations API'
+description: 'Real-time messaging and conversation management'
+---
+
+## Overview
+
+The Conversations API enables direct messaging between users on the platform. It supports one-on-one conversations with text messages and file attachments.
+
+## Queries
+
+### getConverstion
+
+Retrieve a conversation between two users with all messages.
+
+**Input Parameters:**
+
+<ParamField path="userId" type="string" required>
+  First user ID
+</ParamField>
+
+<ParamField path="otherUserId" type="string" required>
+  Second user ID
+</ParamField>
+
+**Response:**
+
+Returns a conversation object with:
+
+<ResponseField name="id" type="string">
+  Conversation ID
+</ResponseField>
+
+<ResponseField name="senderId" type="string">
+  ID of conversation initiator
+</ResponseField>
+
+<ResponseField name="receiverId" type="string">
+  ID of conversation recipient
+</ResponseField>
+
+<ResponseField name="sender" type="object">
+  Sender user details (id, name, email, username)
+</ResponseField>
+
+<ResponseField name="receiver" type="object">
+  Receiver user details (id, name, email, username)
+</ResponseField>
+
+<ResponseField name="messages" type="array">
+  Array of message objects ordered by creation time (ascending)
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Conversation creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+**Errors:**
+
+- `NOT_FOUND`: Conversation not found
+
+**Example:**
+
+```typescript
+const conversation = await trpc.conversation.getConverstion.query({
+  userId: "user_clxxx1",
+  otherUserId: "user_clxxx2"
+});
+
+console.log(`Found ${conversation.messages.length} messages`);
+```
+
+---
+
+## Mutations
+
+### sendMessage
+
+Send a new message in an existing conversation with optional file attachments.
+
+**Input Parameters:**
+
+<ParamField path="conversationId" type="string" required>
+  ID of the conversation
+</ParamField>
+
+<ParamField path="content" type="string" required>
+  Message text content
+</ParamField>
+
+<ParamField path="attachements" type="array" required>
+  Array of attachment objects (can be empty)
+</ParamField>
+
+<ParamField path="attachements[].name" type="string" required>
+  Attachment file name
+</ParamField>
+
+<ParamField path="attachements[].url" type="string" required>
+  Attachment file URL
+</ParamField>
+
+**Response:**
+
+Returns the created message with user details.
+
+<ResponseField name="id" type="string">
+  Message ID
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Message content
+</ResponseField>
+
+<ResponseField name="conversationId" type="string">
+  Parent conversation ID
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  Sender user ID
+</ResponseField>
+
+<ResponseField name="user" type="object">
+  Sender user details
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Message timestamp
+</ResponseField>
+
+**Example:**
+
+```typescript
+// Send a text message
+const message = await trpc.conversation.sendMessage.mutate({
+  conversationId: "conv_clxxx...",
+  content: "Hi! I'm interested in your web development gig.",
+  attachements: []
+});
+
+// Send a message with attachments
+const messageWithFiles = await trpc.conversation.sendMessage.mutate({
+  conversationId: "conv_clxxx...",
+  content: "Here are the project requirements",
+  attachements: [
+    {
+      name: "requirements.pdf",
+      url: "https://khedma-market.s3.amazonaws.com/user-id/requirements.pdf"
+    },
+    {
+      name: "mockups.fig",
+      url: "https://khedma-market.s3.amazonaws.com/user-id/mockups.fig"
+    }
+  ]
+});
+```
+
+---
+
+## Message Model
+
+### Message Fields
+
+<ResponseField name="id" type="string">
+  Unique message identifier (CUID)
+</ResponseField>
+
+<ResponseField name="content" type="string">
+  Message text content
+</ResponseField>
+
+<ResponseField name="conversationId" type="string">
+  Parent conversation ID
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of user who sent the message
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Message creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+### Relations
+
+<ResponseField name="user" type="User">
+  User who sent the message
+</ResponseField>
+
+<ResponseField name="conversation" type="Conversation">
+  Parent conversation
+</ResponseField>
+
+<ResponseField name="attachements" type="Attachement[]">
+  Files attached to the message
+</ResponseField>
+
+---
+
+## Conversation Model
+
+### Conversation Fields
+
+<ResponseField name="id" type="string">
+  Unique conversation identifier (CUID)
+</ResponseField>
+
+<ResponseField name="senderId" type="string">
+  ID of conversation initiator
+</ResponseField>
+
+<ResponseField name="receiverId" type="string">
+  ID of conversation recipient
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Conversation creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+### Relations
+
+<ResponseField name="sender" type="User">
+  User who initiated the conversation
+</ResponseField>
+
+<ResponseField name="receiver" type="User">
+  User who received the conversation
+</ResponseField>
+
+<ResponseField name="messages" type="Message[]">
+  All messages in the conversation
+</ResponseField>
+
+---
+
+## Server-Side Functions
+
+### getOrCreateConversationWithMessages(user1Id, user2Id)
+
+Get existing conversation or create a new one if it doesn't exist.
+
+**Parameters:**
+- `user1Id`: First user ID
+- `user2Id`: Second user ID
+
+**Returns:** Conversation object with all messages
+
+**Example:**
+
+```typescript
+import { getOrCreateConversationWithMessages } from "@/server/api/routers/conversation";
+
+const conversation = await getOrCreateConversationWithMessages(
+  "user_clxxx1",
+  "user_clxxx2"
+);
+```
+
+---
+
+### getUserConversations(userId)
+
+Fetch all conversations for a user.
+
+**Parameters:**
+- `userId`: User ID to fetch conversations for
+
+**Returns:** Array of conversations with messages and participant details
+
+**Note:** Automatically formats conversations so the requesting user is always the "sender".
+
+**Example:**
+
+```typescript
+import { getUserConversations } from "@/server/api/routers/conversation";
+
+const conversations = await getUserConversations("user_clxxx...");
+
+for (const conv of conversations) {
+  const lastMessage = conv.messages[conv.messages.length - 1];
+  console.log(`
+    With: ${conv.receiver.name}
+    Last message: ${lastMessage.content}
+    Time: ${lastMessage.createdAt}
+  `);
+}
+```
+
+---
+
+### getConversationById(id)
+
+Fetch a specific conversation by ID.
+
+**Parameters:**
+- `id`: Conversation ID
+
+**Returns:** Conversation object with messages
+
+**Example:**
+
+```typescript
+import { getConversationById } from "@/server/api/routers/conversation";
+
+const conversation = await getConversationById("conv_clxxx...");
+```
+
+---
+
+### getOrCreateConversation(username, currentUser)
+
+Get or create a conversation with a user by their username.
+
+**Parameters:**
+- `username`: Username of the other user
+- `currentUser`: Current authenticated user object
+
+**Returns:** Conversation object or null if user not found
+
+**Example:**
+
+```typescript
+import { getOrCreateConversation } from "@/server/api/routers/conversation";
+import { getServerAuthSession } from "@/server/auth";
+
+const session = await getServerAuthSession();
+const conversation = await getOrCreateConversation(
+  "johndoe",
+  session.user
+);
+```
+
+---
+
+## Attachment Model
+
+Messages can include file attachments:
+
+<ResponseField name="id" type="string">
+  Attachment ID
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  File name
+</ResponseField>
+
+<ResponseField name="url" type="string">
+  File URL (typically S3)
+</ResponseField>
+
+<ResponseField name="type" type="string">
+  File type (e.g., "document", "image", "video")
+</ResponseField>
+
+<ResponseField name="messageId" type="string">
+  Associated message ID
+</ResponseField>
+
+---
+
+## Complete Example: Messaging Flow
+
+```typescript
+// 1. Client wants to contact a freelancer
+import { getOrCreateConversation } from "@/server/api/routers/conversation";
+import { getServerAuthSession } from "@/server/auth";
+
+const session = await getServerAuthSession();
+const conversation = await getOrCreateConversation(
+  "freelancer_username",
+  session.user
+);
+
+// 2. Send initial message
+const firstMessage = await trpc.conversation.sendMessage.mutate({
+  conversationId: conversation.id,
+  content: "Hello! I saw your React development gig and I'm interested.",
+  attachements: []
+});
+
+// 3. Freelancer responds with file
+const response = await trpc.conversation.sendMessage.mutate({
+  conversationId: conversation.id,
+  content: "Great! Here's my portfolio for your review.",
+  attachements: [
+    {
+      name: "portfolio.pdf",
+      url: "https://s3.amazonaws.com/portfolio.pdf"
+    }
+  ]
+});
+
+// 4. Retrieve full conversation history
+const fullConversation = await trpc.conversation.getConverstion.query({
+  userId: session.user.id,
+  otherUserId: conversation.receiverId
+});
+
+console.log(`Total messages: ${fullConversation.messages.length}`);
+
+// 5. List all user conversations
+const allConversations = await getUserConversations(session.user.id);
+console.log(`Active conversations: ${allConversations.length}`);
+```

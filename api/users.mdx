@@ -1,0 +1,331 @@
+---
+title: 'Users API'
+description: 'User management, authentication, and profile endpoints'
+---
+
+## Overview
+
+The Users API provides endpoints for managing user accounts, personal information, security settings, and company profiles. All procedures require authentication via `protectedProcedure`.
+
+## Queries
+
+### getUserbyUsername
+
+Retrieve a user by their username.
+
+**Input Parameters:**
+
+<ParamField path="username" type="string" required>
+  The unique username to search for
+</ParamField>
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  Unique user identifier (CUID)
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  The user's username
+</ResponseField>
+
+**Example:**
+
+```typescript
+const user = await trpc.user.getUserbyUsername.query({ 
+  username: "johndoe" 
+});
+
+console.log(user); // { id: "clxxx...", username: "johndoe" }
+```
+
+---
+
+## Mutations
+
+### updateUserPersonalInfo
+
+Update the authenticated user's personal information including profile details, contact information, and bio.
+
+**Input Parameters:**
+
+<ParamField path="profilePic" type="string">
+  URL to profile picture
+</ParamField>
+
+<ParamField path="firstName" type="string">
+  First name (2-30 characters)
+</ParamField>
+
+<ParamField path="lastName" type="string">
+  Last name (2-30 characters)
+</ParamField>
+
+<ParamField path="email" type="string" required>
+  Valid email address
+</ParamField>
+
+<ParamField path="phone" type="string">
+  Valid phone number (validated with libphonenumber-js)
+</ParamField>
+
+<ParamField path="dob" type="Date">
+  Date of birth
+</ParamField>
+
+<ParamField path="country" type="string">
+  Country of residence
+</ParamField>
+
+<ParamField path="city" type="string">
+  City of residence
+</ParamField>
+
+<ParamField path="address" type="string">
+  Street address
+</ParamField>
+
+<ParamField path="bio" type="string">
+  User biography
+</ParamField>
+
+<ParamField path="resume" type="string">
+  URL or text of resume
+</ParamField>
+
+**Example:**
+
+```typescript
+await trpc.user.updateUserPersonalInfo.mutate({
+  firstName: "John",
+  lastName: "Doe",
+  email: "john@example.com",
+  phone: "+1234567890",
+  country: "Morocco",
+  city: "Casablanca",
+  bio: "Full-stack developer with 5 years experience"
+});
+```
+
+---
+
+### updateUserSecurityInfo
+
+Update security-related settings including username, password, and two-factor authentication.
+
+**Input Parameters:**
+
+<ParamField path="username" type="string">
+  New username (2-30 characters, must be unique)
+</ParamField>
+
+<ParamField path="isTwoFactorEnabled" type="boolean">
+  Enable or disable two-factor authentication
+</ParamField>
+
+<ParamField path="currentpassword" type="string">
+  Current password (required when changing password, 6-30 characters)
+</ParamField>
+
+<ParamField path="newpassword" type="string">
+  New password (6-30 characters)
+</ParamField>
+
+<ParamField path="confirmPassword" type="string">
+  Confirm new password (must match newpassword)
+</ParamField>
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  User ID
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Updated username
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  User email
+</ResponseField>
+
+**Errors:**
+
+- `BAD_REQUEST`: Username already taken
+- `BAD_REQUEST`: Invalid password
+
+**Example:**
+
+```typescript
+// Update username
+const result = await trpc.user.updateUserSecurityInfo.mutate({
+  username: "newusername"
+});
+
+// Enable 2FA
+await trpc.user.updateUserSecurityInfo.mutate({
+  isTwoFactorEnabled: true
+});
+
+// Change password
+await trpc.user.updateUserSecurityInfo.mutate({
+  currentpassword: "oldpass123",
+  newpassword: "newpass456",
+  confirmPassword: "newpass456"
+});
+```
+
+---
+
+### checkUsername
+
+Check if a username is already taken by another user.
+
+**Input Parameters:**
+
+<ParamField path="username" type="string" required>
+  Username to check availability
+</ParamField>
+
+**Response:**
+
+<ResponseField name="username" type="string">
+  The checked username
+</ResponseField>
+
+<ResponseField name="isTaken" type="boolean">
+  Whether the username is already taken
+</ResponseField>
+
+**Example:**
+
+```typescript
+const check = await trpc.user.checkUsername.mutate({ 
+  username: "johndoe" 
+});
+
+if (check.isTaken) {
+  console.log("Username is not available");
+}
+```
+
+---
+
+### updateAccount
+
+Update user account type and username during initial setup.
+
+**Input Parameters:**
+
+<ParamField path="signUpAs" type="enum" required>
+  User role type: `"client"`, `"freelancer"`, or `"company"`
+  
+  Default: `"client"`
+</ParamField>
+
+<ParamField path="username" type="string" required>
+  Desired username
+</ParamField>
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  User ID
+</ResponseField>
+
+<ResponseField name="role" type="string">
+  Updated role (client, freelancer, company)
+</ResponseField>
+
+<ResponseField name="username" type="string">
+  Updated username
+</ResponseField>
+
+**Errors:**
+
+- `BAD_REQUEST`: Username already taken
+
+**Example:**
+
+```typescript
+const user = await trpc.user.updateAccount.mutate({
+  signUpAs: "freelancer",
+  username: "john_freelancer"
+});
+```
+
+---
+
+### createCompany
+
+Create a company profile for users with the "company" role.
+
+**Input Parameters:**
+
+<ParamField path="name" type="string" required>
+  Company name (max 250 characters)
+</ParamField>
+
+<ParamField path="logo" type="string" required>
+  URL to company logo
+</ParamField>
+
+<ParamField path="industry" type="string" required>
+  Industry sector (max 250 characters)
+</ParamField>
+
+<ParamField path="location" type="string" required>
+  Company location (max 250 characters)
+</ParamField>
+
+<ParamField path="description" type="string" required>
+  Company description (max 250 characters)
+</ParamField>
+
+<ParamField path="contactEmail" type="string" required>
+  Valid contact email address
+</ParamField>
+
+<ParamField path="website" type="string">
+  Company website URL (max 250 characters)
+</ParamField>
+
+**Response:**
+
+Returns the created Company object from Prisma.
+
+**Errors:**
+
+- `BAD_REQUEST`: User is not signed up as a company
+
+**Example:**
+
+```typescript
+const company = await trpc.user.createCompany.mutate({
+  name: "Tech Solutions Inc",
+  logo: "https://example.com/logo.png",
+  industry: "Software Development",
+  location: "Casablanca, Morocco",
+  description: "Leading software development company",
+  contactEmail: "contact@techsolutions.com",
+  website: "https://techsolutions.com"
+});
+```
+
+---
+
+## Server-Side Functions
+
+These functions are available for server-side use only:
+
+### getUserPersonalInfo()
+
+Fetch personal information for the authenticated user from the server session.
+
+**Returns:** User personal info object or null if not authenticated
+
+### getUserSecurityInfo()
+
+Fetch security settings for the authenticated user from the server session.
+
+**Returns:** User security info object or null if not authenticated

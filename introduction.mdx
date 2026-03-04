@@ -1,0 +1,280 @@
+---
+title: Introduction
+description: Learn about Khedma Market - Morocco's premier freelancing platform
+---
+
+## What is Khedma Market?
+
+Khedma Market is a **SaaS freelancing platform** built specifically for Moroccan people, providing a local alternative to international platforms like Fiverr and Upwork. The platform enables freelancers to sell their services online while offering companies a streamlined way to hire talented professionals who match their project needs.
+
+<Note>
+  Khedma Market reduces competition and fees associated with international platforms by focusing exclusively on the Moroccan market, with all payments processed in **Moroccan Dirhams (MAD)**.
+</Note>
+
+## Key Features
+
+Khedma Market provides a comprehensive set of features designed for the Moroccan freelancing ecosystem:
+
+<CardGroup cols={2}>
+  <Card title="Freelancer Profiles" icon="id-card">
+    Create detailed profiles showcasing skills, education, certifications, languages, and portfolio projects to stand out to potential clients.
+  </Card>
+  
+  <Card title="Gig Marketplace" icon="store">
+    Freelancers can create service listings (gigs) with flexible packages (basic, standard, premium) including custom pricing, delivery times, and revisions.
+  </Card>
+  
+  <Card title="Job Postings" icon="briefcase">
+    Companies can post job openings (full-time, part-time, contract, intern) and receive applications from qualified freelancers.
+  </Card>
+  
+  <Card title="Real-time Messaging" icon="comments">
+    Built-in messaging system powered by Socket.io enables instant communication between freelancers and clients.
+  </Card>
+  
+  <Card title="Order Management" icon="shopping-cart">
+    Complete order lifecycle management from placement through completion with status tracking (pending, processing, completed, cancelled).
+  </Card>
+  
+  <Card title="Local Payments" icon="credit-card">
+    Secure payment processing in Moroccan Dirhams with local payment methods, reducing currency conversion fees.
+  </Card>
+  
+  <Card title="Reviews & Ratings" icon="star">
+    Verified reviews and ratings system helps build trust and reputation within the community.
+  </Card>
+  
+  <Card title="Multi-role Support" icon="users">
+    Four distinct user roles: freelancer, client, company, and admin - each with tailored experiences.
+  </Card>
+</CardGroup>
+
+## Technology Stack
+
+Khedma Market is built with modern, production-ready technologies:
+
+### Frontend
+
+- **Next.js 14** - React framework with App Router for server-rendered applications
+- **React 18.2** - JavaScript library for building user interfaces
+- **TypeScript 5.1** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework for custom designs
+- **Radix UI** - Accessible, low-level UI component library
+- **React Hook Form** - Performant form management with validation
+- **Zod** - TypeScript-first schema validation
+- **Tanstack Query** - Powerful data synchronization and caching
+- **Framer Motion** - Production-ready animation library
+
+### Backend
+
+- **tRPC 10** - End-to-end typesafe API framework
+- **Prisma 5** - Modern database toolkit and ORM
+- **MySQL** - Relational database for data persistence
+- **NextAuth.js** - Complete authentication solution with multiple providers
+- **Socket.io** - Real-time bidirectional event-based communication
+- **Bcrypt.js** - Secure password hashing
+- **Resend** - Email delivery service
+- **Zod** - Runtime type checking and validation
+
+### Development Tools
+
+- **pnpm** - Fast, disk space efficient package manager
+- **ESLint** - Code linting and quality checks
+- **Prettier** - Code formatting
+- **TypeScript** - Static type checking
+
+<CodeGroup>
+
+```json package.json
+{
+  "name": "khedma-market",
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "next dev --turbo",
+    "build": "next build",
+    "start": "next start",
+    "db:push": "prisma db push",
+    "db:migrate": "prisma migrate dev",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  }
+}
+```
+
+```prisma schema.prisma
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+```
+
+</CodeGroup>
+
+## User Roles
+
+Khedma Market supports four distinct user roles, each with specific capabilities:
+
+<Accordion title="Freelancer">
+  Freelancers can:
+  - Create and manage detailed profiles with skills, education, and certifications
+  - Build portfolio projects to showcase their work
+  - Create gigs with multiple service packages (basic, standard, premium)
+  - Set custom pricing, delivery times, and revision counts
+  - Receive and fulfill orders from clients
+  - Communicate with clients through real-time messaging
+  - Receive payments in Moroccan Dirhams
+  - Build reputation through reviews and ratings
+</Accordion>
+
+<Accordion title="Client">
+  Clients can:
+  - Browse and search the gig marketplace
+  - Purchase services from freelancers
+  - Post job requirements for custom projects
+  - Communicate directly with freelancers
+  - Track order progress and status
+  - Leave reviews and ratings for completed work
+  - Manage multiple orders simultaneously
+</Accordion>
+
+<Accordion title="Company">
+  Companies can:
+  - Create company profiles with branding and details
+  - Post job openings (full-time, part-time, contract, intern positions)
+  - Specify job requirements, location, salary, and remote options
+  - Receive and review applications from freelancers
+  - Access applicant profiles and portfolios
+  - Hire qualified professionals for long-term positions
+</Accordion>
+
+<Accordion title="Admin">
+  Admins have full platform access to:
+  - Monitor all platform activity
+  - Manage users, gigs, and orders
+  - Handle disputes and support requests
+  - Configure platform settings
+  - Access analytics and reporting
+</Accordion>
+
+## Database Schema Highlights
+
+The platform uses a comprehensive relational database schema:
+
+```typescript
+enum role {
+  client
+  freelancer
+  company
+  admin
+}
+
+enum GigStatus {
+  draft
+  published
+  paused
+  deleted
+}
+
+enum OrderStatus {
+  pending
+  processing
+  completed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  success
+  failed
+}
+
+enum JobType {
+  full_time
+  part_time
+  contract
+  intern
+}
+```
+
+### Core Models
+
+- **User** - User accounts with authentication, profile info, and role-based access
+- **Company** - Company profiles with branding and contact details
+- **Gig** - Service listings created by freelancers with packages
+- **Package** - Pricing tiers (basic, standard, premium) for gigs
+- **Order** - Purchase transactions between clients and freelancers
+- **Payment** - Payment processing and transaction records
+- **Job** - Job postings created by companies
+- **Application** - Job applications submitted by freelancers
+- **Conversation** - Message threads between users
+- **Message** - Individual messages with attachments
+- **Review** - Ratings and feedback on completed work
+- **Project** - Portfolio projects to showcase work
+- **Skill** - User skills with proficiency levels
+- **Education** - Educational background and degrees
+- **Certification** - Professional certifications
+
+## Architecture
+
+Khedma Market follows a modern full-stack architecture:
+
+<Steps>
+  <Step title="Frontend Layer">
+    Next.js App Router handles routing, server components, and client components. React Query manages data fetching and caching.
+  </Step>
+  
+  <Step title="API Layer">
+    tRPC provides end-to-end typesafe API routes with automatic TypeScript inference. All API calls are validated with Zod schemas.
+  </Step>
+  
+  <Step title="Authentication Layer">
+    NextAuth.js handles authentication with support for credentials, GitHub, and Google OAuth providers. JWT strategy with session management.
+  </Step>
+  
+  <Step title="Database Layer">
+    Prisma ORM provides type-safe database access to MySQL. Migrations track schema changes over time.
+  </Step>
+  
+  <Step title="Real-time Layer">
+    Socket.io server enables real-time messaging and notifications between users.
+  </Step>
+</Steps>
+
+## Local Payment Integration
+
+One of Khedma Market's key differentiators is **local payment processing in Moroccan Dirhams**:
+
+<Info>
+  All transactions are processed in MAD (Moroccan Dirham), eliminating currency conversion fees and making payments more accessible to Moroccan freelancers.
+</Info>
+
+Payment features include:
+- Multiple local payment methods
+- Secure transaction processing
+- Order-based payment workflow
+- Payment status tracking (pending, success, failed)
+- Transaction history and records
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart Guide" icon="rocket" href="/quickstart">
+    Get Khedma Market running locally in minutes
+  </Card>
+  
+  <Card title="API Documentation" icon="code" href="/api/overview">
+    Explore the tRPC API and authentication
+  </Card>
+  
+  <Card title="Feature Guides" icon="book" href="/features/freelancer-profiles">
+    Learn about core platform features
+  </Card>
+  
+  <Card title="User Guides" icon="users" href="/guides/freelancers">
+    Role-specific guides for freelancers, clients, and companies
+  </Card>
+</CardGroup>

@@ -1,97 +1,213 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: Khedma Market Documentation
+description: A freelancing platform for Moroccan people, offering a local alternative to international platforms
 ---
 
-## Setting up
+<div className="relative bg-gradient-to-br from-[#5a8a00] to-[#4a7520] dark:from-[#2f3a0f] dark:to-[#1a1f0a] py-20">
+  <div className="max-w-6xl mx-auto px-6 lg:px-8">
+    <div className="flex flex-col lg:flex-row items-center gap-12">
+      <div className="flex-1 text-center lg:text-left">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
+          Welcome to Khedma Market
+        </h1>
+        <p className="text-lg sm:text-xl text-white/90 max-w-2xl mb-8">
+          Build and scale your freelancing business on Morocco's premier platform. Connect with local clients, showcase your skills, and get paid in Moroccan Dirhams.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start flex-wrap">
+          <a 
+            href="/quickstart" 
+            className="inline-block px-8 py-3 bg-white text-[#2f3a0f] font-semibold rounded-2xl hover:bg-gray-100 transition-colors shadow-lg"
+          >
+            Get Started
+          </a>
+          <a 
+            href="/api/overview" 
+            className="inline-block px-8 py-3 border-2 border-white/30 bg-white/10 text-white font-semibold rounded-2xl hover:bg-white/20 transition-colors"
+          >
+            Explore API
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Quick start</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Get up and running with Khedma Market in minutes
+  </p>
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+  <Steps>
+    <Step title="Create your account">
+      Sign up as a freelancer, client, or company. Choose the role that best fits your needs on the platform.
+      
+      ```bash
+      # Visit the registration page
+      https://khedma.market/auth/register
+      ```
+    </Step>
+    
+    <Step title="Complete your profile">
+      Add your skills, education, portfolio projects, and professional details to stand out to potential clients.
+      
+      <Note>
+        Freelancers with complete profiles receive 3x more orders than those with incomplete profiles.
+      </Note>
+    </Step>
+    
+    <Step title="Start creating or ordering">
+      Freelancers can create gigs with custom packages. Clients can browse services or post job requirements.
+      
+      <Accordion title="Example gig structure">
+        ```json
+        {
+          "title": "Professional Logo Design",
+          "packages": {
+            "basic": {
+              "price": 500,
+              "delivery": 3,
+              "revisions": 2
+            },
+            "standard": {
+              "price": 1000,
+              "delivery": 5,
+              "revisions": 5
+            }
+          }
+        }
+        ```
+      </Accordion>
+    </Step>
+    
+    <Step title="Manage orders and communicate">
+      Use the built-in messaging system for real-time communication. Track orders from start to completion.
+      
+      [Learn more about messaging →](/features/messaging)
+    </Step>
+  </Steps>
+</div>
 
-## Make it yours
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Explore by role</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Find documentation tailored to how you use Khedma Market
+  </p>
 
-Design a docs site that looks great and empowers your users.
+  <CardGroup cols={3}>
+    <Card 
+      title="For freelancers" 
+      icon="user-tie" 
+      href="/guides/freelancers"
+    >
+      Create gigs, manage orders, build your portfolio, and grow your freelancing business
+    </Card>
+    <Card 
+      title="For clients" 
+      icon="briefcase" 
+      href="/guides/clients"
+    >
+      Browse services, place orders, communicate with freelancers, and manage projects
+    </Card>
+    <Card 
+      title="For companies" 
+      icon="building" 
+      href="/guides/companies"
+    >
+      Post job openings, review applications, and hire talented Moroccan professionals
+    </Card>
+  </CardGroup>
+</div>
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
-  </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
-  </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
-  </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
-  </Card>
-</Columns>
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Core features</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Discover what makes Khedma Market the best platform for Moroccan freelancers
+  </p>
 
-## Create beautiful pages
+  <CardGroup cols={2}>
+    <Card 
+      title="Freelancer profiles" 
+      icon="id-card" 
+      href="/features/freelancer-profiles"
+    >
+      Showcase skills, education, certifications, and portfolio projects
+    </Card>
+    <Card 
+      title="Gig marketplace" 
+      icon="store" 
+      href="/features/gig-marketplace"
+    >
+      Create service listings with flexible packages and pricing tiers
+    </Card>
+    <Card 
+      title="Job postings" 
+      icon="clipboard-list" 
+      href="/features/job-postings"
+    >
+      Companies can post jobs and receive applications from qualified freelancers
+    </Card>
+    <Card 
+      title="Real-time messaging" 
+      icon="comments" 
+      href="/features/messaging"
+    >
+      Communicate instantly with clients and freelancers using Socket.io
+    </Card>
+    <Card 
+      title="Orders & payments" 
+      icon="credit-card" 
+      href="/features/orders-payments"
+    >
+      Secure payment processing in Moroccan Dirhams with local payment methods
+    </Card>
+    <Card 
+      title="Reviews & ratings" 
+      icon="star" 
+      href="/features/reviews-ratings"
+    >
+      Build trust through verified reviews and ratings from real clients
+    </Card>
+  </CardGroup>
+</div>
 
-Everything you need to create world-class documentation.
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">API documentation</h2>
+  <p className="text-base text-gray-600 dark:text-gray-400 mb-8">
+    Integrate Khedma Market into your applications
+  </p>
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+  <CardGroup cols={2}>
+    <Card 
+      title="Authentication" 
+      icon="lock" 
+      href="/api/authentication"
+    >
+      Secure authentication with NextAuth supporting multiple providers
+    </Card>
+    <Card 
+      title="tRPC endpoints" 
+      icon="code" 
+      href="/api/overview"
+    >
+      Type-safe API routes for users, gigs, orders, jobs, and more
+    </Card>
+  </CardGroup>
+</div>
 
-## Need inspiration?
-
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="bg-gradient-to-r from-[#5a8a00] to-[#4a7520] dark:from-[#2f3a0f] dark:to-[#1a1f0a] rounded-2xl p-8 sm:p-12 text-center">
+    <h2 className="text-3xl font-bold text-white mb-4">
+      Ready to get started?
+    </h2>
+    <p className="text-lg text-white/90 mb-8 max-w-2xl mx-auto">
+      Join thousands of Moroccan freelancers and clients building successful businesses on Khedma Market.
+    </p>
+    <a 
+      href="/quickstart" 
+      className="inline-block px-8 py-3 bg-white text-[#2f3a0f] font-semibold rounded-2xl hover:bg-gray-100 transition-colors shadow-lg"
+    >
+      Start Building Today
+    </a>
+  </div>
+</div>

@@ -1,0 +1,482 @@
+---
+title: 'Gigs API'
+description: 'Create and manage freelance service offerings (gigs)'
+---
+
+## Overview
+
+The Gigs API allows freelancers to create, update, and manage their service offerings. A gig represents a service that can be purchased by clients, with multiple pricing packages (basic, standard, premium).
+
+## Queries
+
+### doesOffersMultiplePackages
+
+Check if a gig offers multiple package tiers.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID (CUID)
+</ParamField>
+
+**Response:**
+
+Returns `boolean` indicating if the gig offers multiple packages.
+
+**Example:**
+
+```typescript
+const hasMultiple = await trpc.gig.doesOffersMultiplePackages.query({ 
+  id: "clxxx..." 
+});
+```
+
+---
+
+### getUserGigs
+
+Retrieve all gigs belonging to a specific user.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  User ID
+</ParamField>
+
+**Response:**
+
+Returns array of gig objects with:
+
+<ResponseField name="id" type="string">
+  Gig ID
+</ResponseField>
+
+<ResponseField name="title" type="string">
+  Gig title
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  URL-friendly slug
+</ResponseField>
+
+<ResponseField name="status" type="string">
+  Status: draft, published, paused, or deleted
+</ResponseField>
+
+<ResponseField name="category" type="object">
+  Category details (id, name, parentId)
+</ResponseField>
+
+<ResponseField name="packages" type="object">
+  Package tiers: basic, standard, premium
+</ResponseField>
+
+<ResponseField name="attachaments" type="object">
+  Media files: images, videos, documents
+</ResponseField>
+
+<ResponseField name="owner" type="object">
+  Owner details (name, username)
+</ResponseField>
+
+**Example:**
+
+```typescript
+const gigs = await trpc.gig.getUserGigs.query({ 
+  id: "user_clxxx" 
+});
+```
+
+---
+
+## Mutations
+
+### createDraft
+
+Create a new draft gig for the authenticated user.
+
+**Input Parameters:**
+
+None (uses authenticated user from context)
+
+**Response:**
+
+Returns the created Gig object.
+
+**Example:**
+
+```typescript
+const draft = await trpc.gig.createDraft.mutate();
+console.log(draft.id); // Use this ID for subsequent updates
+```
+
+---
+
+### updateOverview
+
+Update gig title, category, and tags.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID to update
+</ParamField>
+
+<ParamField path="title" type="string" required>
+  Gig title
+</ParamField>
+
+<ParamField path="category" type="string" required>
+  Parent category ID
+</ParamField>
+
+<ParamField path="subCategory" type="string" required>
+  Subcategory ID to connect
+</ParamField>
+
+<ParamField path="tags" type="array" required>
+  Array of tag objects with `id` and `text` properties
+</ParamField>
+
+**Errors:**
+
+- `NOT_FOUND`: Gig not found
+
+**Example:**
+
+```typescript
+await trpc.gig.updateOverview.mutate({
+  id: "clxxx...",
+  title: "I will build a modern React website",
+  category: "design-creative",
+  subCategory: "web-design",
+  tags: [
+    { id: "tag1", text: "react" },
+    { id: "tag2", text: "nextjs" },
+    { id: "tag3", text: "tailwind" }
+  ]
+});
+```
+
+---
+
+### createPackages
+
+Create or update pricing packages for a gig. Supports basic (required), standard, and premium tiers.
+
+**Input Parameters:**
+
+<ParamField path="gigId" type="string" required>
+  Gig ID
+</ParamField>
+
+<ParamField path="basic" type="object" required>
+  Basic package details (always required)
+</ParamField>
+
+<ParamField path="basic.name" type="string" required>
+  Package name (5-20 characters)
+</ParamField>
+
+<ParamField path="basic.description" type="string" required>
+  Package description (5-100 characters)
+</ParamField>
+
+<ParamField path="basic.price" type="number" required>
+  Price in MAD (minimum 10)
+</ParamField>
+
+<ParamField path="basic.delivery" type="number" required>
+  Delivery time in days
+</ParamField>
+
+<ParamField path="basic.revisions" type="number" required>
+  Number of revisions (minimum 1)
+</ParamField>
+
+<ParamField path="standard" type="object">
+  Standard package (optional, same fields as basic)
+</ParamField>
+
+<ParamField path="premium" type="object">
+  Premium package (optional, same fields as basic)
+</ParamField>
+
+**Response:**
+
+<ResponseField name="basic" type="object">
+  Created/updated basic package
+</ResponseField>
+
+<ResponseField name="standard" type="object">
+  Created/updated standard package (if provided)
+</ResponseField>
+
+<ResponseField name="premium" type="object">
+  Created/updated premium package (if provided)
+</ResponseField>
+
+**Example:**
+
+```typescript
+const packages = await trpc.gig.createPackages.mutate({
+  gigId: "clxxx...",
+  basic: {
+    name: "Basic Website",
+    description: "Simple 3-page website",
+    price: 500,
+    delivery: 7,
+    revisions: 2
+  },
+  standard: {
+    name: "Standard Website",
+    description: "5-page website with contact form",
+    price: 1000,
+    delivery: 14,
+    revisions: 4
+  },
+  premium: {
+    name: "Premium Website",
+    description: "10-page website with CMS integration",
+    price: 2000,
+    delivery: 21,
+    revisions: 6
+  }
+});
+```
+
+---
+
+### udpateOffersMultiplePackages
+
+Set whether the gig offers multiple package tiers.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID
+</ParamField>
+
+<ParamField path="value" type="boolean" required>
+  Whether to offer multiple packages
+</ParamField>
+
+**Example:**
+
+```typescript
+await trpc.gig.udpateOffersMultiplePackages.mutate({
+  id: "clxxx...",
+  value: true
+});
+```
+
+---
+
+### updateDescriptionFaq
+
+Update the gig description and FAQ section.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID
+</ParamField>
+
+<ParamField path="description" type="object" required>
+  EditorJS OutputData object with description content
+</ParamField>
+
+<ParamField path="faq" type="array" required>
+  Array of FAQ objects
+</ParamField>
+
+<ParamField path="faq[].question" type="string" required>
+  FAQ question
+</ParamField>
+
+<ParamField path="faq[].answer" type="string" required>
+  FAQ answer
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="description" type="object">
+  Updated description
+</ResponseField>
+
+<ResponseField name="faq" type="number">
+  Number of FAQ items created
+</ResponseField>
+
+**Errors:**
+
+- `UNAUTHORIZED`: Gig not found or not owned by user
+
+**Example:**
+
+```typescript
+const result = await trpc.gig.updateDescriptionFaq.mutate({
+  id: "clxxx...",
+  description: {
+    blocks: [
+      {
+        type: "paragraph",
+        data: { text: "I will create a professional website..." }
+      }
+    ]
+  },
+  faq: [
+    {
+      question: "What do you need to get started?",
+      answer: "I need your brand guidelines and content."
+    },
+    {
+      question: "Do you provide hosting?",
+      answer: "No, but I can recommend hosting providers."
+    }
+  ]
+});
+```
+
+---
+
+### updateGallery
+
+Update gig images, videos, and documents.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID
+</ParamField>
+
+<ParamField path="images" type="array" required>
+  Array of image URLs (at least one required)
+</ParamField>
+
+<ParamField path="videos" type="array">
+  Array of video URLs
+</ParamField>
+
+<ParamField path="documents" type="array">
+  Array of document URLs
+</ParamField>
+
+**Response:**
+
+<ResponseField name="success" type="boolean">
+  Operation success status
+</ResponseField>
+
+<ResponseField name="images" type="array">
+  Array of created attachment objects
+</ResponseField>
+
+**Example:**
+
+```typescript
+const gallery = await trpc.gig.updateGallery.mutate({
+  id: "clxxx...",
+  images: [
+    "https://khedma-market.s3.amazonaws.com/user-id/image1.jpg",
+    "https://khedma-market.s3.amazonaws.com/user-id/image2.jpg"
+  ]
+});
+```
+
+---
+
+### publish
+
+Publish a draft gig, making it visible to clients. Generates a unique slug.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID to publish
+</ParamField>
+
+**Response:**
+
+<ResponseField name="id" type="string">
+  Gig ID
+</ResponseField>
+
+<ResponseField name="slug" type="string">
+  Generated URL slug
+</ResponseField>
+
+<ResponseField name="owner" type="object">
+  Owner details (name, username)
+</ResponseField>
+
+**Errors:**
+
+- `NOT_FOUND`: Gig not found
+- `UNPROCESSABLE_CONTENT`: Title not set
+
+**Example:**
+
+```typescript
+const published = await trpc.gig.publish.mutate({ 
+  id: "clxxx..." 
+});
+
+console.log(`View at: /${published.owner.username}/${published.slug}`);
+```
+
+---
+
+### delete
+
+Delete a gig owned by the authenticated user.
+
+**Input Parameters:**
+
+<ParamField path="id" type="string" required>
+  Gig ID to delete
+</ParamField>
+
+**Errors:**
+
+- `NOT_FOUND`: Gig not found or not owned by user
+
+**Example:**
+
+```typescript
+await trpc.gig.delete.mutate({ 
+  id: "clxxx..." 
+});
+```
+
+---
+
+## Server-Side Functions
+
+### getGigById(id: string)
+
+Fetch complete gig details by ID.
+
+### getGigDetails(username: string, slug: string)
+
+Fetch full gig details for public display by owner username and slug.
+
+### getUserGigsByUsername(username: string)
+
+Fetch all gigs for a user by username.
+
+### getGigPackages(id: string)
+
+Fetch all package tiers for a gig.
+
+### getDescriptionFaq(id: string)
+
+Fetch description and FAQ for a gig.
+
+### getGigGallery(id: string)
+
+Fetch all media attachments for a gig.

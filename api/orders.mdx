@@ -1,0 +1,269 @@
+---
+title: 'Orders API'
+description: 'Order and payment processing endpoints'
+---
+
+## Overview
+
+The Orders API handles the creation and management of service orders. Orders connect clients with freelancers through purchased gig packages, integrating with YouCan Pay for payment processing.
+
+## Mutations
+
+### create
+
+Create a new order for a gig package with payment information.
+
+**Input Parameters:**
+
+<ParamField path="amount" type="number" required>
+  Order amount in MAD
+</ParamField>
+
+<ParamField path="transactionId" type="string" required>
+  Payment transaction ID from payment provider
+</ParamField>
+
+<ParamField path="orderId" type="string" required>
+  Unique order identifier
+</ParamField>
+
+<ParamField path="gigId" type="string" required>
+  ID of the gig being purchased
+</ParamField>
+
+<ParamField path="packageId" type="string" required>
+  ID of the specific package tier (basic, standard, or premium)
+</ParamField>
+
+**Note:** This endpoint is currently a stub and requires implementation.
+
+**Example:**
+
+```typescript
+await trpc.order.create.mutate({
+  amount: 500,
+  transactionId: "txn_abc123",
+  orderId: "order_xyz789",
+  gigId: "clxxx...",
+  packageId: "pkg_clxxx..."
+});
+```
+
+---
+
+## Order Model
+
+Orders in the database follow this structure:
+
+### Order Fields
+
+<ResponseField name="id" type="string">
+  Unique order identifier (CUID)
+</ResponseField>
+
+<ResponseField name="userId" type="string">
+  ID of the client placing the order
+</ResponseField>
+
+<ResponseField name="gigId" type="string">
+  ID of the purchased gig
+</ResponseField>
+
+<ResponseField name="packageId" type="string">
+  ID of the purchased package (basic, standard, or premium)
+</ResponseField>
+
+<ResponseField name="status" type="enum">
+  Order status: `pending`, `processing`, `completed`, or `cancelled`
+  
+  Default: `pending`
+</ResponseField>
+
+<ResponseField name="totalAmount" type="float">
+  Total order amount in MAD
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Order creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+### Relations
+
+<ResponseField name="user" type="User">
+  The client who placed the order
+</ResponseField>
+
+<ResponseField name="gig" type="Gig">
+  The purchased gig
+</ResponseField>
+
+<ResponseField name="package" type="Package">
+  The specific package tier purchased
+</ResponseField>
+
+<ResponseField name="payment" type="Payment">
+  Associated payment record (one-to-one)
+</ResponseField>
+
+---
+
+## Payment Model
+
+Payments associated with orders:
+
+### Payment Fields
+
+<ResponseField name="id" type="string">
+  Unique payment identifier (CUID)
+</ResponseField>
+
+<ResponseField name="orderId" type="string">
+  Associated order ID (unique)
+</ResponseField>
+
+<ResponseField name="status" type="enum">
+  Payment status: `pending`, `success`, or `failed`
+  
+  Default: `pending`
+</ResponseField>
+
+<ResponseField name="amount" type="float">
+  Payment amount in MAD
+</ResponseField>
+
+<ResponseField name="paymentMethod" type="string">
+  Payment method used (e.g., "card", "bank_transfer")
+</ResponseField>
+
+<ResponseField name="transactionId" type="string">
+  External transaction ID from payment provider
+</ResponseField>
+
+<ResponseField name="createdAt" type="DateTime">
+  Payment creation timestamp
+</ResponseField>
+
+<ResponseField name="updatedAt" type="DateTime">
+  Last update timestamp
+</ResponseField>
+
+---
+
+## Payment Integration
+
+Khedma Market integrates with **YouCan Pay** for payment processing.
+
+### tokenizePayment()
+
+Server-side function to tokenize a payment with YouCan Pay.
+
+**Parameters:**
+
+- `amount` (number): Payment amount
+- `currency` (string): Currency code (e.g., "MAD")
+- `order_id` (string): Unique order identifier
+
+**Returns:**
+
+Token object with ID for payment processing:
+
+```typescript
+{
+  token: {
+    id: string // UUID token for payment
+  }
+}
+```
+
+**Example Usage:**
+
+```typescript
+import { tokenizePayment } from "@/server/api/routers/order";
+
+const tokenData = await tokenizePayment(
+  500,      // amount in MAD
+  "MAD",    // currency
+  "order_123" // order ID
+);
+
+if (tokenData) {
+  // Use tokenData.token.id for payment processing
+  console.log("Payment token:", tokenData.token.id);
+}
+```
+
+### YouCan Pay API Flow
+
+1. **Tokenize**: Create a payment token
+   ```bash
+   POST https://youcanpay.com/api/tokenize
+   Content-Type: multipart/form-data
+   
+   amount=500
+   currency=MAD
+   pri_key=pri_key_for_test
+   order_id=12
+   metadata[cart.id]=uuid
+   metadata[type]=checkout
+   ```
+
+2. **Response**: Receive token
+   ```json
+   {
+     "token": {
+       "id": "26010885-fb7b-41eb-baf8-3420213f1ed5"
+     }
+   }
+   ```
+
+3. **Process**: Use token to complete payment with YouCan Pay widget
+
+---
+
+## Order Status Flow
+
+```
+pending → processing → completed
+   ↓
+cancelled
+```
+
+- **pending**: Order created, awaiting payment
+- **processing**: Payment confirmed, work in progress
+- **completed**: Order delivered and accepted
+- **cancelled**: Order cancelled by client or freelancer
+
+---
+
+## Example: Complete Order Flow
+
+```typescript
+// 1. Client selects a package
+const gig = await getGigDetails("johndoe", "website-design");
+const selectedPackage = gig.packages.basic;
+
+// 2. Tokenize payment
+const token = await tokenizePayment(
+  selectedPackage.price,
+  "MAD",
+  `order_${Date.now()}`
+);
+
+// 3. Process payment with YouCan Pay (frontend)
+// ... payment widget integration ...
+
+// 4. Create order after successful payment
+const order = await trpc.order.create.mutate({
+  amount: selectedPackage.price,
+  transactionId: paymentResponse.transactionId,
+  orderId: `order_${Date.now()}`,
+  gigId: gig.id,
+  packageId: selectedPackage.id
+});
+
+console.log("Order created:", order.id);
+```

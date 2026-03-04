@@ -1,0 +1,179 @@
+---
+title: 'Freelancer Profiles'
+description: 'Build comprehensive professional profiles to showcase skills and attract clients'
+icon: 'user'
+---
+
+## Overview
+
+Freelancer profiles are the foundation of the Khedma Market platform. They allow freelancers to present their professional identity, showcase their expertise, and build credibility with potential clients. A well-crafted profile helps freelancers stand out in the marketplace and increases their chances of winning projects.
+
+## Key Capabilities
+
+### Personal Information
+Freelancers can manage comprehensive profile details including:
+- **Basic Info**: Name, username, email, and profile picture
+- **Location**: Country and city information
+- **Contact Details**: Phone number and website
+- **Bio**: Professional summary and introduction
+- **Resume**: Uploadable document for detailed work history
+
+### Professional Credentials
+
+<AccordionGroup>
+  <Accordion title="Skills">
+    Showcase technical and professional competencies with proficiency levels:
+    - Beginner
+    - Intermediate
+    - Advanced
+    - Expert
+    
+    Each skill includes a name and searchable value to help clients find the right talent.
+  </Accordion>
+
+  <Accordion title="Languages">
+    Display language capabilities with proficiency levels:
+    - Basic
+    - Conversational
+    - Fluent
+    - Native or Bilingual
+    
+    Multiple languages can be added to attract international clients.
+  </Accordion>
+
+  <Accordion title="Education">
+    List academic achievements including:
+    - University name and country
+    - Degree title and major
+    - Year of graduation
+  </Accordion>
+
+  <Accordion title="Certifications">
+    Highlight professional certifications:
+    - Certification name
+    - Issuing organization
+    - Date earned
+  </Accordion>
+</AccordionGroup>
+
+### Profile Description
+
+The description field allows freelancers to write a detailed overview of their services, experience, and value proposition. This rich text field helps communicate personality and expertise beyond structured data.
+
+## User Workflows
+
+### For Freelancers
+
+<Steps>
+  <Step title="Complete Basic Information">
+    Fill out personal details, upload a professional profile picture, and add contact information to establish credibility.
+  </Step>
+  
+  <Step title="Add Skills & Expertise">
+    Select relevant skills and set proficiency levels. Skills are searchable, making it easier for clients to discover your profile.
+  </Step>
+  
+  <Step title="List Education & Certifications">
+    Add academic background and professional certifications to validate expertise and build trust.
+  </Step>
+  
+  <Step title="Set Language Proficiencies">
+    Specify languages you can work in, opening opportunities with international clients.
+  </Step>
+  
+  <Step title="Write Your Description">
+    Craft a compelling professional description that highlights your unique value proposition and experience.
+  </Step>
+</Steps>
+
+### For Clients
+
+Clients can browse freelancer profiles to:
+- View skills and proficiency levels
+- Check language capabilities for communication
+- Review education and certifications
+- Read professional descriptions
+- See ratings and reviews from previous work
+- Browse the freelancer's gig offerings
+
+## Important Profile Fields
+
+### User Model Fields
+
+<ResponseField name="name" type="string">
+  Display name shown across the platform
+</ResponseField>
+
+<ResponseField name="username" type="string" required>
+  Unique identifier used in profile URLs (e.g., /profile/username)
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  Contact email for account and communication
+</ResponseField>
+
+<ResponseField name="bio" type="text">
+  Short professional summary
+</ResponseField>
+
+<ResponseField name="description" type="text">
+  Detailed professional overview and service description
+</ResponseField>
+
+<ResponseField name="country" type="string">
+  Primary location country (defaults to Morocco)
+</ResponseField>
+
+<ResponseField name="city" type="string">
+  City location
+</ResponseField>
+
+<ResponseField name="profilePic" type="string">
+  URL to profile picture image
+</ResponseField>
+
+<ResponseField name="resume" type="text">
+  Uploaded resume document
+</ResponseField>
+
+<ResponseField name="role" type="enum">
+  User type: client, freelancer, company, or admin
+</ResponseField>
+
+### Skill Fields
+
+<ResponseField name="name" type="string">
+  Display name of the skill
+</ResponseField>
+
+<ResponseField name="level" type="enum">
+  Proficiency: beginner, intermediate, advanced, or expert
+</ResponseField>
+
+<ResponseField name="status" type="enum">
+  Active or inactive (for filtering)
+</ResponseField>
+
+## Related Features
+
+<CardGroup cols={2}>
+  <Card title="Gig Marketplace" icon="store" href="/features/gig-marketplace">
+    Create gigs to offer your services
+  </Card>
+  
+  <Card title="Reviews & Ratings" icon="star" href="/features/reviews-ratings">
+    Build reputation through client feedback
+  </Card>
+  
+  <Card title="Messaging" icon="message" href="/features/messaging">
+    Communicate with potential clients
+  </Card>
+  
+  <Card title="Job Postings" icon="briefcase" href="/features/job-postings">
+    Apply to client job postings
+  </Card>
+</CardGroup>
+
+<Note>
+  Profiles are publicly visible to help clients discover and evaluate freelancers. Keep your information current and professional.
+</Note>
