@@ -1,0 +1,82 @@
+{
+  "projectType": "saas",
+  "projectName": "Khedma Market",
+  "projectDescription": "A freelancing platform for Moroccan people, offering a local alternative to international platforms like Fiverr and Upwork.",
+  "theme": "almond",
+  "primaryColor": "#040404",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/freelancer-profiles",
+              "features/gig-marketplace",
+              "features/job-postings",
+              "features/messaging",
+              "features/orders-payments",
+              "features/reviews-ratings"
+            ]
+          },
+          {
+            "group": "User Guides",
+            "pages": [
+              "guides/freelancers",
+              "guides/clients",
+              "guides/companies"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["api/overview", "api/authentication"]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/users",
+              "api/gigs",
+              "api/orders",
+              "api/jobs",
+              "api/conversations",
+              "api/profiles"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Freelancer profiles with skills, education, and portfolio",
+    "Gig marketplace with packages and pricing",
+    "Job posting system for companies",
+    "Real-time messaging with Socket.io",
+    "Order management and payment processing in Moroccan Dirhams",
+    "Reviews and ratings system",
+    "Multi-role authentication (freelancer, client, company, admin)"
+  ],
+  "publicApiSurface": [
+    "POST /api/auth/signin - User authentication",
+    "POST /api/auth/signup - User registration",
+    "GET /api/trpc/user.* - User management endpoints",
+    "GET /api/trpc/gig.* - Gig CRUD operations",
+    "GET /api/trpc/job.* - Job posting operations",
+    "GET /api/trpc/order.* - Order management",
+    "GET /api/trpc/conversation.* - Messaging operations",
+    "GET /api/trpc/profile.* - Profile management",
+    "GET /api/trpc/category.* - Category operations",
+    "GET /api/trpc/project.* - Portfolio project operations"
+  ]
+}
